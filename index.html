@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZennX Tracker | Enterprise</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <style>
+    :root {
+      --primary: #0078D4;
+      --bg: #F3F2F1;
+      --sidebar-bg: #FFFFFF;
+      --text-main: #201F1E;
+      --text-muted: #605E5C;
+      --border: #EDEBE9;
+      --white: #FFFFFF;
+      --success: #107C10;
+      --danger: #A4262C;
+      --overlay: rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
+
+    /* --- NAVIGATION --- */
+    .top-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--primary); color: white; display: none; align-items: center; padding: 0 15px; z-index: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .hamburger { font-size: 1.5rem; cursor: pointer; margin-right: 15px; }
+
+    .sidebar { width: 260px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: none; flex-direction: column; position: fixed; z-index: 1001; transition: transform 0.3s ease; }
+    .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); display: none; z-index: 1000; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); color: var(--primary); }
+    .nav-item { padding: 14px 24px; display: flex; align-items: center; gap: 16px; cursor: pointer; color: var(--text-muted); transition: 0.2s; font-weight: 500; }
+    .nav-item.active { background: #E1F0FE; color: var(--primary); border-left: 4px solid var(--primary); }
+
+    @media (max-width: 850px) {
+      .sidebar { transform: translateX(-100%); display: flex !important; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.show { display: block; }
+      .top-bar { display: flex; }
+      .main-content { padding-top: 75px !important; margin-left: 0 !important; }
+    }
+
+    .main-content { flex: 1; padding: 25px; transition: 0.3s; width: 100%; }
+    .has-sidebar { margin-left: 260px; }
+    .view-container { max-width: 1000px; margin: 0 auto; display: none; }
+    .view-container.active { display: block; }
+
+    .card { background: var(--white); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat-card { background: var(--white); padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); }
+    .stat-card div { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+    
+    input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; }
+    button { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    
+    /* --- REDESIGNED HISTORY STYLES --- */
+    .hist-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid #eee; position: relative; }
+    .hist-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .hist-name { font-weight: bold; color: #0078D4; font-size: 1.1rem; }
+    .hist-badge { background: #e7f4e7; color: #107c10; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+    .hist-row { display: flex; align-items: center; background: #f9f9f9; padding: 8px 12px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9rem; color: #444; }
+    .hist-row i { width: 25px; color: white; }
+    .hist-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .hist-feedback { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 0.9rem; border-left: 4px solid #ccc; }
+    .hist-img { width: 100px; height: 100px; border-radius: 8px; object-fit: cover; position: absolute; right: 80px; top: 45px; cursor: pointer; border: 1px solid #ddd; }
+    .btn-icon { background: #0078D4; color: white; width: 35px; height: 35px; border-radius: 4px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+
+    @media (max-width: 600px) {
+        .hist-img { position: static; width: 100%; height: 150px; margin-top: 10px; }
+        .hist-grid { grid-template-columns: 1fr; }
+        .stats-grid { grid-template-columns: 1fr; }
+    }
+
+    /* --- MODAL --- */
+    .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+
+    #map { height: 500px; width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+
+    /* --- MAP SEARCH MODAL --- */
+    .map-search-modal { display: none; position: fixed; z-index: 2001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .map-search-content { background: white; padding: 0; border-radius: 12px; width: 95%; height: 90vh; max-width: 900px; display: flex; flex-direction: column; }
+    .map-search-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border); }
+    .map-search-header h3 { margin: 0; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; }
+    #searchBox { width: 100%; padding: 12px; margin: 10px 0 0 0; font-size: 1rem; border: 1px solid var(--border); border-radius: 6px; }
+    #mapSearchContainer { flex: 1; position: relative; }
+    #mapSearch { width: 100%; height: 100%; }
+    .map-search-footer { display: flex; gap: 10px; padding: 20px; border-top: 1px solid var(--border); justify-content: flex-end; }
+    .map-search-footer button { width: auto; min-width: 100px; margin: 0; }
+    .location-info { padding: 10px; background: #f5f5f5; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; }
+
+    /* Location buttons grouping */
+    .location-btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .location-btn-group button { margin-bottom: 0; }
+
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 20px; }
+    .filter-row input, .filter-row select, .filter-row button { margin-bottom: 0; }
+    .filter-row button { width: auto; min-width: 100px; }
+  </style>
+</head>
+<body>
+
+  <div id="logoutModal" class="modal">
+    <div class="modal-content">
+      <i class="fas fa-sign-out-alt" style="font-size: 2rem; color: var(--danger); margin-bottom: 15px;"></i>
+      <h3>Confirm Logout</h3>
+      <p>Are you sure you want to end your session?</p>
+      <div class="modal-btns">
+        <button onclick="closeLogoutModal()" style="background:#eee; color:#333; flex:1">Cancel</button>
+        <button onclick="confirmLogout()" style="background:var(--danger); flex:1">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN MAP SEARCH MODAL -->
+  <div id="adminMapSearchModal" class="map-search-modal">
+    <div class="map-search-content">
+      <div class="map-search-header">
+        <h3>🗺️ Search Location on Map</h3>
+        <button class="close-btn" onclick="closeMapSearch('admin')">✕</button>
+      </div>
+      <div style="padding: 15px; border-bottom: 1px solid var(--border);">
+        <input type="text" id="adminSearchBox" placeholder="Search location by name or address...">
+        <div class="location-info" id="adminLocationInfo" style="display:none;"></div>
+      </div>
+      <div id="adminMapSearchContainer"></div>
+      <div class="map-search-footer">
+        <button onclick="closeMapSearch('admin')" style="background:#eee; color:#333">Cancel</button>
+        <button onclick="confirmMapLocation('admin')" style="background:var(--success)">Confirm Location</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER MAP SEARCH MODAL -->
+  <div id="userMapSearchModal" class="map-search-modal">
+    <div class="map-search-content">
+      <div class="map-search-header">
+        <h3>🗺️ Search Location on Map</h3>
+        <button class="close-btn" onclick="closeMapSearch('user')">✕</button>
+      </div>
+      <div style="padding: 15px; border-bottom: 1px solid var(--border);">
+        <input type="text" id="userSearchBox" placeholder="Search location by name or address...">
+        <div class="location-info" id="userLocationInfo" style="display:none;"></div>
+      </div>
+      <div id="userMapSearchContainer"></div>
+      <div class="map-search-footer">
+        <button onclick="closeMapSearch('user')" style="background:#eee; color:#333">Cancel</button>
+        <button onclick="confirmMapLocation('user')" style="background:var(--success)">Confirm Location</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="top-bar" id="topBar"><i class="fas fa-bars hamburger" onclick="toggleSidebar()"></i><span>ZennX Tracker</span></div>
+  <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ADMIN SIDEBAR -->
+  <nav class="sidebar" id="mainSidebar">
+    <div class="sidebar-header"><span><i class="fas fa-shield-alt"></i> <b>ZennX</b> Admin</span><i class="fas fa-times" onclick="toggleSidebar()"></i></div>
+    <div class="nav-menu" style="flex:1">
+      <div class="nav-item active" onclick="switchView('dashboardView', this)"><i class="fas fa-th-large"></i><span>Dashboard</span></div>
+      <div class="nav-item" onclick="switchView('newVisitView', this)"><i class="fas fa-plus-circle"></i><span>New Visit</span></div>
+      <div class="nav-item" onclick="switchView('historyView', this)"><i class="fas fa-history"></i><span>Master History</span></div>
+      <div class="nav-item" onclick="switchView('mapView', this)"><i class="fas fa-map-marked-alt"></i><span>Live Tracking</span></div>
+    </div>
+    <div class="nav-item" onclick="openLogoutModal()" style="color:var(--danger); border-top:1px solid var(--border)"><i class="fas fa-sign-out-alt"></i><span>Logout</span></div>
+  </nav>
+
+  <!-- USER SIDEBAR -->
+  <nav class="sidebar" id="userSidebar">
+    <div class="sidebar-header"><span><i class="fas fa-user-circle"></i> <b>ZennX</b> User</span><i class="fas fa-times" onclick="toggleSidebar()"></i></div>
+    <div class="nav-menu" style="flex:1">
+      <div class="nav-item active" onclick="switchView('userDashboardView', this)"><i class="fas fa-th-large"></i><span>Dashboard</span></div>
+      <div class="nav-item" onclick="switchView('userNewVisitView', this)"><i class="fas fa-plus-circle"></i><span>New Visit</span></div>
+      <div class="nav-item" onclick="switchView('userHistoryView', this)"><i class="fas fa-history"></i><span>Visit History</span></div>
+    </div>
+    <div class="nav-item" onclick="openLogoutModal()" style="color:var(--danger); border-top:1px solid var(--border)"><i class="fas fa-sign-out-alt"></i><span>Logout</span></div>
+  </nav>
+
+  <main class="main-content" id="mainContent">
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="view-container active">
+      <div class="card" style="max-width: 400px; margin: 40px auto;">
+        <h2 style="text-align:center; color:var(--primary)">Secure Login</h2>
+        <input type="email" id="email" placeholder="Email"><input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+      </div>
+    </div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div id="dashboardView" class="view-container">
+      <h1>Operational Analytics</h1>
+      <div class="stats-grid">
+        <div class="stat-card"><h4>Total</h4><div id="statTotal">0</div></div>
+        <div class="stat-card"><h4>Active</h4><div id="statActive">0</div></div>
+        <div class="stat-card"><h4>New Reg</h4><div id="statNew">0</div></div>
+      </div>
+      <div class="card">
+        <h3>Export Data</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <input type="date" id="expFrom" style="flex:1; min-width:150px;">
+          <input type="date" id="expTo" style="flex:1; min-width:150px;">
+        </div>
+        <select id="expEmp"><option value="all">All Employees</option></select>
+        <button onclick="exportToExcel()" style="background:var(--success)">Download Excel Report</button>
+      </div>
+    </div>
+
+    <!-- ADMIN NEW VISIT -->
+    <div id="newVisitView" class="view-container">
+        <div style="display:flex; justify-content:space-between; align-items:center"><h1>Field Report</h1><button onclick="openLogoutModal()" id="mobileLogout" style="width:auto; background:none; color:var(--danger)">Logout</button></div>
+        <div class="card">
+            <input type="text" id="clientName" placeholder="Client Name">
+            <input type="text" id="zid" placeholder="ZID (Optional)">
+            <input type="text" id="area" placeholder="Area">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <select id="reg" style="flex:1"><option>Registered</option><option>Not Registered</option></select>
+              <select id="status" style="flex:1"><option>Active</option><option>Not Active</option><option>Occasional</option></select>
+            </div>
+            <textarea id="feedback" placeholder="Feedback/Notes"></textarea>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+              <button onclick="getLocation()" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍 Capture GPS</button>
+              <button onclick="openMapSearch('admin')" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️ Search on Map</button>
+            </div>
+            <p id="locText" style="text-align:center; font-size:0.8rem;">Location not set</p>
+            <input type="file" id="selfie" accept="image/*" placeholder="Upload Photo">
+            <button id="submitBtn" onclick="submitVisit()">Submit Report ✅</button>
+        </div>
+
+        <div id="summaryCard" class="card" style="display:none; background: #eef;">
+            <h4 style="margin-top:0">📋 Visit Summary</h4>
+            <textarea id="visitSummaryText" rows="7" readonly style="background:white"></textarea>
+            <button onclick="copyVisitText()" style="background:#25D366"><i class="fab fa-whatsapp"></i> Copy for WhatsApp</button>
+        </div>
+    </div>
+
+    <!-- ADMIN HISTORY -->
+    <div id="historyView" class="view-container">
+      <h1>Historical Data</h1>
+      <div class="card filter-row">
+          <input type="text" id="hEmpFilter" placeholder="Employee Email" style="flex:2; min-width:200px">
+          <input type="date" id="hDateFilter" style="flex:1; min-width:150px">
+          <button onclick="applyFilters()">Search</button>
+          <button onclick="resetFilters()" style="background:#eee; color:#333">Clear</button>
+      </div>
+      <div id="dataList"></div>
+    </div>
+
+    <!-- ADMIN MAP VIEW -->
+    <div id="mapView" class="view-container">
+      <h1>Live Field Tracking</h1>
+      <div class="card">
+        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+          <input type="date" id="mapDateFilter" style="flex:1; min-width:150px;">
+          <select id="mapEmpFilter" style="flex:1; min-width:150px;"><option value="">All Staff</option></select>
+          <button onclick="updateMap()" style="width:auto">Refresh Path</button>
+        </div>
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <!-- USER DASHBOARD -->
+    <div id="userDashboardView" class="view-container">
+      <h1>My Dashboard</h1>
+      <div class="stats-grid">
+        <div class="stat-card"><h4>Total Visits</h4><div id="userStatTotal">0</div></div>
+        <div class="stat-card"><h4>This Month</h4><div id="userStatMonth">0</div></div>
+      </div>
+      <div class="card">
+        <h3>Export My Data</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <input type="date" id="userExpFrom" style="flex:1; min-width:150px;">
+          <input type="date" id="userExpTo" style="flex:1; min-width:150px;">
+        </div>
+        <button onclick="userExportToExcel()" style="background:var(--success)">Download Excel Report</button>
+      </div>
+    </div>
+
+    <!-- USER NEW VISIT -->
+    <div id="userNewVisitView" class="view-container">
+        <div style="display:flex; justify-content:space-between; align-items:center"><h1>New Visit</h1><button onclick="openLogoutModal()" id="userMobileLogout" style="width:auto; background:none; color:var(--danger)">Logout</button></div>
+        <div class="card">
+            <input type="text" id="userClientName" placeholder="Client Name">
+            <input type="text" id="userZid" placeholder="ZID (Optional)">
+            <input type="text" id="userArea" placeholder="Area">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <select id="userReg" style="flex:1"><option>Registered</option><option>Not Registered</option></select>
+              <select id="userStatus" style="flex:1"><option>Active</option><option>Not Active</option><option>Occasional</option></select>
+            </div>
+            <textarea id="userFeedback" placeholder="Feedback/Notes"></textarea>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+              <button onclick="userGetLocation()" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍 Capture GPS</button>
+              <button onclick="openMapSearch('user')" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️ Search on Map</button>
+            </div>
+            <p id="userLocText" style="text-align:center; font-size:0.8rem;">Location not set</p>
+            <input type="file" id="userSelfie" accept="image/*" placeholder="Upload Photo">
+            <button id="userSubmitBtn" onclick="userSubmitVisit()">Submit Report ✅</button>
+        </div>
+
+        <div id="userSummaryCard" class="card" style="display:none; background: #eef;">
+            <h4 style="margin-top:0">📋 Visit Summary</h4>
+            <textarea id="userVisitSummaryText" rows="7" readonly style="background:white"></textarea>
+            <button onclick="userCopyVisitText()" style="background:#25D366"><i class="fab fa-whatsapp"></i> Copy for WhatsApp</button>
+        </div>
+    </div>
+
+    <!-- USER HISTORY -->
+    <div id="userHistoryView" class="view-container">
+      <h1>My Visit History</h1>
+      <div class="card filter-row">
+          <input type="date" id="userHDateFilter" style="flex:1; min-width:150px">
+          <button onclick="applyUserFilters()">Search</button>
+          <button onclick="resetUserFilters()" style="background:#eee; color:#333">Clear</button>
+      </div>
+      <div id="userDataList"></div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, addDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCsrbo7GREULX86jlYb12b-Wij1Dtg3sMI",
+      authDomain: "zennx-tracker-6ec45.firebaseapp.com",
+      projectId: "zennx-tracker-6ec45",
+      storageBucket: "zennx-tracker-6ec45.firebasestorage.app",
+      messagingSenderId: "174189895680",
+      appId: "1:174189895680:web:d51337f120b6438e7cf8e5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    const auth = getAuth(app);
+
+    let lat, lng, userLat, userLng, currentUser, masterData = [], googleMap, markers = [], polyline;
+    let adminMapSearch, userMapSearch, adminMarker, userMarker, geocoder;
+
+    // --- NAVIGATION ---
+    window.toggleSidebar = () => {
+      const adminSidebar = document.getElementById('mainSidebar');
+      const userSidebar = document.getElementById('userSidebar');
+      const visibleSidebar = adminSidebar.style.display === 'flex' ? adminSidebar : userSidebar;
+      visibleSidebar.classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('show');
+    };
+
+    window.switchView = (id, el) => {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      if(el) el.classList.add('active');
+      if(window.innerWidth <= 850) {
+          const adminSidebar = document.getElementById('mainSidebar');
+          const userSidebar = document.getElementById('userSidebar');
+          const visibleSidebar = adminSidebar.style.display === 'flex' ? adminSidebar : userSidebar;
+          if(visibleSidebar.classList.contains('open')) toggleSidebar();
+      }
+      if(id !== 'loginView') loadData();
+    };
+
+    // --- AUTH & LOGOUT MODAL ---
+    window.login = () => signInWithEmailAndPassword(auth, email.value, password.value).catch(e => alert(e.message));
+    
+    window.openLogoutModal = () => document.getElementById('logoutModal').style.display = 'flex';
+    window.closeLogoutModal = () => document.getElementById('logoutModal').style.display = 'none';
+    window.confirmLogout = () => signOut(auth).then(() => location.reload());
+
+    // --- MAP SEARCH FUNCTIONS ---
+    window.openMapSearch = (type) => {
+      const modalId = type === 'admin' ? 'adminMapSearchModal' : 'userMapSearchModal';
+      const containerId = type === 'admin' ? 'adminMapSearchContainer' : 'userMapSearchContainer';
+      document.getElementById(modalId).style.display = 'flex';
+      
+      setTimeout(() => {
+        const mapElement = document.getElementById(containerId);
+        mapElement.innerHTML = '<div id="' + (type === 'admin' ? 'adminMap' : 'userMap') + '" style="width:100%; height:100%;"></div>';
+        
+        const mapId = type === 'admin' ? 'adminMap' : 'userMap';
+        const defaultCenter = { lat: 20.5937, lng: 78.9629 }; // India center
+        
+        if (type === 'admin') {
+          if (!adminMapSearch) {
+            adminMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+            geocoder = new google.maps.Geocoder();
+            
+            adminMapSearch.addListener('click', (e) => {
+              if (adminMarker) adminMarker.setMap(null);
+              adminMarker = new google.maps.Marker({ position: e.latLng, map: adminMapSearch });
+              document.getElementById('adminLocationInfo').innerText = `📍 Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`;
+              document.getElementById('adminLocationInfo').style.display = 'block';
+            });
+            
+            // Search functionality
+            document.getElementById('adminSearchBox').addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') searchLocation(type);
+            });
+            document.getElementById('adminSearchBox').addEventListener('change', () => searchLocation(type));
+          } else {
+            new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+            adminMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+          }
+        } else {
+          if (!userMapSearch) {
+            userMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+            if (!geocoder) geocoder = new google.maps.Geocoder();
+            
+            userMapSearch.addListener('click', (e) => {
+              if (userMarker) userMarker.setMap(null);
+              userMarker = new google.maps.Marker({ position: e.latLng, map: userMapSearch });
+              document.getElementById('userLocationInfo').innerText = `📍 Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`;
+              document.getElementById('userLocationInfo').style.display = 'block';
+            });
+            
+            // Search functionality
+            document.getElementById('userSearchBox').addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') searchLocation(type);
+            });
+            document.getElementById('userSearchBox').addEventListener('change', () => searchLocation(type));
+          } else {
+            new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+            userMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+          }
+        }
+      }, 100);
+    };
+
+    window.searchLocation = (type) => {
+      const searchBoxId = type === 'admin' ? 'adminSearchBox' : 'userSearchBox';
+      const address = document.getElementById(searchBoxId).value;
+      const mapInstance = type === 'admin' ? adminMapSearch : userMapSearch;
+      const markerRef = type === 'admin' ? adminMarker : userMarker;
+      
+      if (!address) return alert('Please enter a location to search');
+      
+      geocoder.geocode({ address: address }, (results, status) => {
+        if (status === 'OK') {
+          const location = results[0].geometry.location;
+          mapInstance.setCenter(location);
+          mapInstance.setZoom(15);
+          
+          if (markerRef) markerRef.setMap(null);
+          if (type === 'admin') {
+            adminMarker = new google.maps.Marker({ position: location, map: mapInstance });
+          } else {
+            userMarker = new google.maps.Marker({ position: location, map: mapInstance });
+          }
+          
+          document.getElementById(type === 'admin' ? 'adminLocationInfo' : 'userLocationInfo').innerText = `📍 ${results[0].formatted_address} | Lat: ${location.lat().toFixed(6)}, Lng: ${location.lng().toFixed(6)}`;
+          document.getElementById(type === 'admin' ? 'adminLocationInfo' : 'userLocationInfo').style.display = 'block';
+        } else {
+          alert('Location not found. Please try another search.');
+        }
+      });
+    };
+
+    window.confirmMapLocation = (type) => {
+      const marker = type === 'admin' ? adminMarker : userMarker;
+      if (!marker) return alert('Please select a location on the map');
+      
+      const position = marker.getPosition();
+      if (type === 'admin') {
+        lat = position.lat();
+        lng = position.lng();
+        locText.innerText = `Captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      } else {
+        userLat = position.lat();
+        userLng = position.lng();
+        userLocText.innerText = `Captured: ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`;
+      }
+      closeMapSearch(type);
+    };
+
+    window.closeMapSearch = (type) => {
+      const modalId = type === 'admin' ? 'adminMapSearchModal' : 'userMapSearchModal';
+      document.getElementById(modalId).style.display = 'none';
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user.email;
+        document.getElementById('loginView').style.display = 'none';
+        const isAdmin = ["zennx.usm@gmail.com", "saisnd70@gmail.com"].includes(user.email);
+        
+        if (isAdmin) {
+          // ADMIN INTERFACE
+          document.getElementById('mainSidebar').style.display = 'flex';
+          document.getElementById('userSidebar').style.display = 'none';
+          document.getElementById('mainContent').classList.add('has-sidebar');
+          document.getElementById('topBar').classList.add('admin-active');
+          document.getElementById('mobileLogout').style.display = 'none';
+          switchView('dashboardView', document.querySelector('.nav-item'));
+        } else {
+          // USER INTERFACE
+          document.getElementById('mainSidebar').style.display = 'none';
+          document.getElementById('userSidebar').style.display = 'flex';
+          document.getElementById('mainContent').classList.add('has-sidebar');
+          document.getElementById('topBar').classList.add('admin-active');
+          document.getElementById('userMobileLogout').style.display = 'none';
+          switchView('userDashboardView', document.querySelector('#userSidebar .nav-item'));
+        }
+      }
+    });
+
+    // --- ADMIN FIELD REPORT LOGIC ---
+    window.getLocation = () => navigator.geolocation.getCurrentPosition(p => {
+        lat = p.coords.latitude; lng = p.coords.longitude;
+        locText.innerText = `Captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }, (err) => alert("Please enable GPS"));
+
+    window.submitVisit = async () => {
+        const file = selfie.files[0]; 
+        if(!lat || !lng || !file) return alert("Missing GPS or Photo!");
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Uploading...";
+        
+        try {
+            const sRef = ref(storage, `v/${Date.now()}`);
+            await uploadBytes(sRef, file);
+            const url = await getDownloadURL(sRef);
+            const visitDate = new Date();
+
+            const visitData = { 
+                employee: currentUser, 
+                clientName: clientName.value, 
+                zid: zid.value || 'N/A',
+                area: area.value, 
+                registered: reg.value, 
+                orderStatus: status.value, 
+                feedback: feedback.value, 
+                latitude: lat, 
+                longitude: lng, 
+                imageUrl: url, 
+                time: visitDate 
+            };
+
+            await addDoc(collection(db, "visits"), visitData);
+
+            const waText = `📍 *Visit Update*\n\n` +
+                `👨‍💼 *Employee:* ${currentUser}\n` +
+                `🏪 *Client:* ${clientName.value}\n` +
+                `🆔 *ZID:* ${zid.value || 'N/A'}\n` +
+                `📍 *Area:* ${area.value}\n` +
+                `📊 *Status:* ${status.value}\n` +
+                `📝 *Feedback:* ${feedback.value || "-"}\n` +
+                `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
+                `📌 *Location:* https://www.google.com/maps?q=${lat},${lng}`;
+
+            document.getElementById('visitSummaryText').value = waText;
+            document.getElementById('summaryCard').style.display = 'block';
+            submitBtn.innerText = "Submitted Successfully!";
+            alert("Report Saved!");
+        } catch (e) {
+            alert("Error: " + e.message);
+            submitBtn.disabled = false;
+        }
+    };
+
+    window.copyVisitText = () => {
+        const copyText = document.getElementById("visitSummaryText");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        alert("Copied to clipboard!");
+    };
+
+    // --- USER FIELD REPORT LOGIC ---
+    window.userGetLocation = () => navigator.geolocation.getCurrentPosition(p => {
+        userLat = p.coords.latitude; userLng = p.coords.longitude;
+        userLocText.innerText = `Captured: ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`;
+    }, (err) => alert("Please enable GPS"));
+
+    window.userSubmitVisit = async () => {
+        const file = userSelfie.files[0]; 
+        if(!userLat || !userLng || !file) return alert("Missing GPS or Photo!");
+        userSubmitBtn.disabled = true;
+        userSubmitBtn.innerText = "Uploading...";
+        
+        try {
+            const sRef = ref(storage, `v/${Date.now()}`);
+            await uploadBytes(sRef, file);
+            const url = await getDownloadURL(sRef);
+            const visitDate = new Date();
+
+            const visitData = { 
+                employee: currentUser, 
+                clientName: userClientName.value, 
+                zid: userZid.value || 'N/A',
+                area: userArea.value, 
+                registered: userReg.value, 
+                orderStatus: userStatus.value, 
+                feedback: userFeedback.value, 
+                latitude: userLat, 
+                longitude: userLng, 
+                imageUrl: url, 
+                time: visitDate 
+            };
+
+            await addDoc(collection(db, "visits"), visitData);
+
+            const waText = `📍 *Visit Update*\n\n` +
+                `👨‍💼 *Employee:* ${currentUser}\n` +
+                `🏪 *Client:* ${userClientName.value}\n` +
+                `🆔 *ZID:* ${userZid.value || 'N/A'}\n` +
+                `📍 *Area:* ${userArea.value}\n` +
+                `📊 *Status:* ${userStatus.value}\n` +
+                `📝 *Feedback:* ${userFeedback.value || "-"}\n` +
+                `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
+                `📌 *Location:* https://www.google.com/maps?q=${userLat},${userLng}`;
+
+            document.getElementById('userVisitSummaryText').value = waText;
+            document.getElementById('userSummaryCard').style.display = 'block';
+            userSubmitBtn.innerText = "Submitted Successfully!";
+            alert("Report Saved!");
+            loadData();
+        } catch (e) {
+            alert("Error: " + e.message);
+            userSubmitBtn.disabled = false;
+        }
+    };
+
+    window.userCopyVisitText = () => {
+        const copyText = document.getElementById("userVisitSummaryText");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        alert("Copied to clipboard!");
+    };
+
+    // --- DATA LOADING & FILTERING ---
+    async function loadData() {
+        const snap = await getDocs(query(collection(db, "visits"), orderBy("time", "asc")));
+        masterData = []; 
+        snap.forEach(doc => masterData.push(doc.data()));
+        updateStats();
+        renderHistory(masterData);
+        updateUserStats();
+        renderUserHistory(masterData.filter(d => d.employee === currentUser));
+    }
+
+    function updateStats() {
+        statTotal.innerText = masterData.length;
+        statActive.innerText = masterData.filter(d => d.orderStatus === 'Active').length;
+        statNew.innerText = masterData.filter(d => d.registered === 'Not Registered').length;
+        const emps = [...new Set(masterData.map(d => d.employee))];
+        expEmp.innerHTML = '<option value="all">All Employees</option>' + emps.map(e => `<option>${e}</option>`).join('');
+        mapEmpFilter.innerHTML = '<option value="">All Staff</option>' + emps.map(e => `<option>${e}</option>`).join('');
+    }
+
+    function updateUserStats() {
+        const userData = masterData.filter(d => d.employee === currentUser);
+        userStatTotal.innerText = userData.length;
+        
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        const monthData = userData.filter(d => {
+            const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+            return dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear;
+        });
+        userStatMonth.innerText = monthData.length;
+    }
+
+    // --- ADMIN HISTORY UI RENDERING ---
+    function renderHistory(data) {
+        const displayData = [...data].reverse();
+        dataList.innerHTML = displayData.map(d => {
+            const dateObj = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+            return `
+            <div class="hist-card">
+                <div class="hist-header">
+                    <span class="hist-name">${d.employee.split('@')[0]}</span>
+                    <span class="hist-badge">${d.orderStatus}</span>
+                </div>
+                <div class="hist-row"><i class="fas fa-user"></i> ${d.employee}</div>
+                <div class="hist-grid">
+                    <div class="hist-row"><i class="fas fa-map-marker-alt"></i> ${d.area}</div>
+                    <div class="hist-row"><i class="fas fa-calendar-alt"></i> ${dateObj.toLocaleDateString()}</div>
+                    <div class="hist-row"><a href="https://www.google.com/maps?q=${d.latitude},${d.longitude}" target="_blank" class="btn-icon"><i class="fas fa-map-marked-alt"></i></a> </div>
+                </div> 
+                <div class="hist-row"><i class="fas fa-check-circle"></i> Registered: ${d.registered}</div>
+                <div class="hist-feedback"><b>Feedback:</b> ${d.feedback || 'No feedback provided'}</div>
+                <img src="${d.imageUrl}" class="hist-img" onclick="window.open('${d.imageUrl}')">
+            </div>
+        `}).join('') || '<div class="card">No records found.</div>';
+    }
+
+    // --- USER HISTORY UI RENDERING ---
+    function renderUserHistory(data) {
+        const displayData = [...data].reverse();
+        userDataList.innerHTML = displayData.map(d => {
+            const dateObj = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+            return `
+            <div class="hist-card">
+                <div class="hist-header">
+                    <span class="hist-name">${d.clientName}</span>
+                    <span class="hist-badge">${d.orderStatus}</span>
+                </div>
+                <div class="hist-grid">
+                    <div class="hist-row"><i class="fas fa-map-marker-alt"></i> ${d.area}</div>
+                    <div class="hist-row"><i class="fas fa-calendar-alt"></i> ${dateObj.toLocaleDateString()}</div>
+                    <div class="hist-row"><a href="https://www.google.com/maps?q=${d.latitude},${d.longitude}" target="_blank" class="btn-icon"><i class="fas fa-map-marked-alt"></i></a> </div>
+                </div> 
+                <div class="hist-row"><i class="fas fa-check-circle"></i> Registered: ${d.registered}</div>
+                <div class="hist-feedback"><b>Feedback:</b> ${d.feedback || 'No feedback provided'}</div>
+                <img src="${d.imageUrl}" class="hist-img" onclick="window.open('${d.imageUrl}')">
+            </div>
+        `}).join('') || '<div class="card">No visits yet.</div>';
+    }
+
+    window.applyFilters = () => {
+        const date = hDateFilter.value;
+        const emp = hEmpFilter.value.toLowerCase();
+        const filtered = masterData.filter(d => {
+            const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
+            return (!date || dDate === date) && (!emp || d.employee.toLowerCase().includes(emp));
+        });
+        renderHistory(filtered);
+    };
+
+    window.resetFilters = () => {
+        hDateFilter.value = "";
+        hEmpFilter.value = "";
+        renderHistory(masterData);
+    };
+
+    window.applyUserFilters = () => {
+        const date = userHDateFilter.value;
+        const userData = masterData.filter(d => d.employee === currentUser);
+        const filtered = userData.filter(d => {
+            const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
+            return !date || dDate === date;
+        });
+        renderUserHistory(filtered);
+    };
+
+    window.resetUserFilters = () => {
+        userHDateFilter.value = "";
+        renderUserHistory(masterData.filter(d => d.employee === currentUser));
+    };
+
+    // --- MAP TRACKING ---
+    function initMap() {
+        if (!googleMap) googleMap = new google.maps.Map(document.getElementById("map"), { zoom: 5, center: { lat: 20.5937, lng: 78.9629 } });
+        updateMap();
+    }
+
+    window.updateMap = () => {
+        const date = mapDateFilter.value;
+        const emp = mapEmpFilter.value;
+        markers.forEach(m => m.setMap(null)); markers = [];
+        if (polyline) polyline.setMap(null);
+
+        const filtered = masterData.filter(d => {
+            const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
+            return (!date || dDate === date) && (!emp || d.employee === emp);
+        });
+
+        const path = [];
+        const bounds = new google.maps.LatLngBounds();
+        filtered.forEach((d, i) => {
+            const pos = { lat: d.latitude, lng: d.longitude };
+            path.push(pos);
+            bounds.extend(pos);
+            markers.push(new google.maps.Marker({ position: pos, map: googleMap, label: (i + 1).toString(), title: d.clientName }));
+        });
+
+        if (path.length > 1) {
+            polyline = new google.maps.Polyline({ path: path, geodesic: true, strokeColor: "#0078D4", strokeWeight: 3 });
+            polyline.setMap(googleMap);
+        }
+        if (filtered.length > 0) googleMap.fitBounds(bounds);
+    };
+
+    // --- ADMIN EXPORT ---
+    window.exportToExcel = () => {
+        const from = userExpFrom.value ? new Date(userExpFrom.value) : null;
+        const to = userExpTo.value ? new Date(userExpTo.value) : null;
+        const emp = expEmp.value;
+
+        let filtered = masterData;
+        if (emp !== 'all') filtered = filtered.filter(d => d.employee === emp);
+        if (from) filtered = filtered.filter(d => {
+            const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+            return dDate >= from;
+        });
+        if (to) {
+            to.setHours(23, 59, 59, 999);
+            filtered = filtered.filter(d => {
+                const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+                return dDate <= to;
+            });
+        }
+
+        const ws = XLSX.utils.json_to_sheet(filtered);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Visits");
+        XLSX.writeFile(wb, "ZennX_Report.xlsx");
+    };
+
+    // --- USER EXPORT ---
+    window.userExportToExcel = () => {
+        const from = userExpFrom.value ? new Date(userExpFrom.value) : null;
+        const to = userExpTo.value ? new Date(userExpTo.value) : null;
+
+        let filtered = masterData.filter(d => d.employee === currentUser);
+        
+        if (from) filtered = filtered.filter(d => {
+            const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+            return dDate >= from;
+        });
+        if (to) {
+            to.setHours(23, 59, 59, 999);
+            filtered = filtered.filter(d => {
+                const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+                return dDate <= to;
+            });
+        }
+
+        const ws = XLSX.utils.json_to_sheet(filtered);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "My Visits");
+        XLSX.writeFile(wb, "MyVisits_Report.xlsx");
+    };
+  </script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhAIRN38f0GpLTaMZ9dKUGGZhDmUmwZhU"></script>
+</body>
+</html>
