@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ZennX Tracker | Enterprise</title>
-  
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  
+
   <style>
     :root {
       --primary: #0078D4;
@@ -19,90 +20,598 @@
       --white: #FFFFFF;
       --success: #107C10;
       --danger: #A4262C;
-      --overlay: rgba(0,0,0,0.4);
+      --overlay: rgba(0, 0, 0, 0.4);
     }
 
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
     /* --- NAVIGATION --- */
-    .top-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--primary); color: white; display: none; align-items: center; padding: 0 15px; z-index: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .hamburger { font-size: 1.5rem; cursor: pointer; margin-right: 15px; }
-
-    .sidebar { width: 260px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: none; flex-direction: column; position: fixed; z-index: 1001; transition: transform 0.3s ease; }
-    .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); display: none; z-index: 1000; }
-    .sidebar-header { padding: 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); color: var(--primary); }
-    .nav-item { padding: 14px 24px; display: flex; align-items: center; gap: 16px; cursor: pointer; color: var(--text-muted); transition: 0.2s; font-weight: 500; }
-    .nav-item.active { background: #E1F0FE; color: var(--primary); border-left: 4px solid var(--primary); }
-
-    @media (max-width: 850px) {
-      .sidebar { transform: translateX(-100%); display: flex !important; }
-      .sidebar.open { transform: translateX(0); }
-      .sidebar-overlay.show { display: block; }
-      .top-bar { display: flex; }
-      .main-content { padding-top: 75px !important; margin-left: 0 !important; }
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--primary);
+      color: white;
+      display: none;
+      align-items: center;
+      padding: 0 15px;
+      z-index: 900;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    .main-content { flex: 1; padding: 25px; transition: 0.3s; width: 100%; }
-    .has-sidebar { margin-left: 260px; }
-    .view-container { max-width: 1000px; margin: 0 auto; display: none; }
-    .view-container.active { display: block; }
+    .hamburger {
+      font-size: 1.5rem;
+      cursor: pointer;
+      margin-right: 15px;
+    }
 
-    .card { background: var(--white); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .stat-card { background: var(--white); padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); }
-    .stat-card div { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
-    
-    input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; }
-    button { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      position: fixed;
+      z-index: 1001;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--overlay);
+      display: none;
+      z-index: 1000;
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      color: var(--primary);
+    }
+
+    .nav-item {
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: 0.2s;
+      font-weight: 500;
+    }
+
+    .nav-item.active {
+      background: #E1F0FE;
+      color: var(--primary);
+      border-left: 4px solid var(--primary);
+    }
+
+    @media (max-width: 850px) {
+      .sidebar {
+        transform: translateX(-100%);
+        display: flex !important;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay.show {
+        display: block;
+      }
+
+      .top-bar {
+        display: flex;
+      }
+
+      .main-content {
+        padding-top: 75px !important;
+        margin-left: 0 !important;
+      }
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 25px;
+      transition: 0.3s;
+      width: 100%;
+    }
+
+    .has-sidebar {
+      margin-left: 260px;
+    }
+
+    .view-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: none;
+    }
+
+    .view-container.active {
+      display: block;
+    }
+
+    .card {
+      background: var(--white);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .stat-card div {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
     /* --- REDESIGNED HISTORY STYLES --- */
-    .hist-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid #eee; position: relative; }
-    .hist-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .hist-name { font-weight: bold; color: #0078D4; font-size: 1.1rem; }
-    .hist-badge { background: #e7f4e7; color: #107c10; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
-    .hist-row { display: flex; align-items: center; background: #f9f9f9; padding: 8px 12px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9rem; color: #444; }
-    .hist-row i { width: 25px; color: white; }
-    .hist-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .hist-feedback { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 0.9rem; border-left: 4px solid #ccc; }
-    .hist-img { width: 100px; height: 100px; border-radius: 8px; object-fit: cover; position: absolute; right: 80px; top: 45px; cursor: pointer; border: 1px solid #ddd; }
-    .btn-icon { background: #0078D4; color: white; width: 35px; height: 35px; border-radius: 4px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+    .hist-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border: 1px solid #eee;
+      position: relative;
+    }
+
+    .hist-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .hist-name {
+      font-weight: bold;
+      color: #0078D4;
+      font-size: 1.1rem;
+    }
+
+    .hist-badge {
+      background: #e7f4e7;
+      color: #107c10;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .hist-row {
+      display: flex;
+      align-items: center;
+      background: #f9f9f9;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+      color: #444;
+    }
+
+    .hist-row i {
+      width: 25px;
+      color: white;
+    }
+
+    .hist-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .hist-feedback {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      border-left: 4px solid #ccc;
+    }
+
+    .hist-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      object-fit: cover;
+      position: absolute;
+      right: 80px;
+      top: 45px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+    }
+
+    .btn-icon {
+      background: #0078D4;
+      color: white;
+      width: 35px;
+      height: 35px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
 
     @media (max-width: 600px) {
-        .hist-img { position: static; width: 100%; height: 150px; margin-top: 10px; }
-        .hist-grid { grid-template-columns: 1fr; }
-        .stats-grid { grid-template-columns: 1fr; }
+      .hist-img {
+        position: static;
+        width: 100%;
+        height: 150px;
+        margin-top: 10px;
+      }
+
+      .hist-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* --- MODAL --- */
-    .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-    .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; }
-    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
 
-    #map { height: 500px; width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 350px;
+      text-align: center;
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    #map {
+      height: 500px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
 
     /* --- MAP SEARCH MODAL --- */
-    .map-search-modal { display: none; position: fixed; z-index: 2001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-    .map-search-content { background: white; padding: 0; border-radius: 12px; width: 95%; height: 90vh; max-width: 900px; display: flex; flex-direction: column; }
-    .map-search-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border); }
-    .map-search-header h3 { margin: 0; }
-    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; }
-    #searchBox { width: 100%; padding: 12px; margin: 10px 0 0 0; font-size: 1rem; border: 1px solid var(--border); border-radius: 6px; }
-    #mapSearchContainer { flex: 1; position: relative; }
-    #mapSearch { width: 100%; height: 100%; }
-    .map-search-footer { display: flex; gap: 10px; padding: 20px; border-top: 1px solid var(--border); justify-content: flex-end; }
-    .map-search-footer button { width: auto; min-width: 100px; margin: 0; }
-    .location-info { padding: 10px; background: #f5f5f5; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; }
+    .map-search-modal {
+      display: none;
+      position: fixed;
+      z-index: 2001;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-search-content {
+      background: white;
+      padding: 0;
+      border-radius: 14px;
+      width: 95%;
+      height: 92vh;
+      max-width: 920px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .map-search-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    .map-search-header h3 {
+      margin: 0;
+      color: var(--primary);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: #999;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .close-btn:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    /* Search bar area */
+    .map-search-bar-area {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+      position: relative;
+      z-index: 10;
+    }
+
+    .map-search-input-wrap {
+      position: relative;
+    }
+
+    .map-search-input-wrap i {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #888;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+
+    .map-search-input {
+      width: 100%;
+      padding: 11px 14px 11px 38px;
+      font-size: 0.95rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      transition: border 0.2s;
+      font-family: inherit;
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .map-search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.12);
+    }
+
+    .search-suggestions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 999;
+      display: none;
+    }
+
+    .suggestion-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-item:hover {
+      background: #E1F0FE;
+    }
+
+    .suggestion-item i {
+      color: var(--primary);
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .suggestion-main {
+      font-weight: 600;
+      color: #222;
+    }
+
+    .suggestion-sub {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 1px;
+    }
+
+    .search-loading {
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Map container */
+    .map-search-map-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .map-search-map-wrap>div[id$="Map"] {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Coords panel */
+    .map-coords-panel {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      z-index: 5;
+      display: none;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+
+    .map-drag-hint {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 120, 212, 0.85);
+      color: white;
+      padding: 5px 14px;
+      border-radius: 16px;
+      font-size: 0.78rem;
+      z-index: 5;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+    }
+
+    /* Footer */
+    .map-search-footer {
+      display: flex;
+      gap: 10px;
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      justify-content: space-between;
+      align-items: center;
+      background: #fafafa;
+    }
+
+    .map-selected-coords {
+      font-size: 0.82rem;
+      color: #555;
+      flex: 1;
+    }
+
+    .map-selected-coords span {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .map-search-footer button {
+      width: auto;
+      min-width: 110px;
+      margin: 0;
+      padding: 10px 18px;
+    }
 
     /* Location buttons grouping */
-    .location-btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-    .location-btn-group button { margin-bottom: 0; }
+    .location-btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
 
-    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 20px; }
-    .filter-row input, .filter-row select, .filter-row button { margin-bottom: 0; }
-    .filter-row button { width: auto; min-width: 100px; }
+    .location-btn-group button {
+      margin-bottom: 0;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      margin-bottom: 20px;
+    }
+
+    .filter-row input,
+    .filter-row select,
+    .filter-row button {
+      margin-bottom: 0;
+    }
+
+    .filter-row button {
+      width: auto;
+      min-width: 100px;
+    }
   </style>
 </head>
+
 <body>
 
   <div id="logoutModal" class="modal">
@@ -121,17 +630,26 @@
   <div id="adminMapSearchModal" class="map-search-modal">
     <div class="map-search-content">
       <div class="map-search-header">
-        <h3>🗺️ Search Location on Map</h3>
+        <h3>📍 Select Location on Map</h3>
         <button class="close-btn" onclick="closeMapSearch('admin')">✕</button>
       </div>
-      <div style="padding: 15px; border-bottom: 1px solid var(--border);">
-        <input type="text" id="adminSearchBox" placeholder="Search location by name or address...">
-        <div class="location-info" id="adminLocationInfo" style="display:none;"></div>
+      <div class="map-search-bar-area">
+        <div class="map-search-input-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="adminSearchBox" class="map-search-input"
+            placeholder="Search location by name, address or landmark..." autocomplete="off">
+          <div class="search-suggestions" id="adminSuggestions"></div>
+        </div>
       </div>
-      <div id="adminMapSearchContainer"></div>
+      <div class="map-search-map-wrap" id="adminMapSearchContainer">
+        <div class="map-drag-hint" id="adminDragHint">🖐 Drag the pin to fine-tune location</div>
+        <div class="map-coords-panel" id="adminCoordsPanel"></div>
+      </div>
       <div class="map-search-footer">
+        <div class="map-selected-coords" id="adminFooterCoords">No location selected yet</div>
         <button onclick="closeMapSearch('admin')" style="background:#eee; color:#333">Cancel</button>
-        <button onclick="confirmMapLocation('admin')" style="background:var(--success)">Confirm Location</button>
+        <button onclick="confirmMapLocation('admin')" style="background:var(--success)"><i class="fas fa-check"></i>
+          Confirm</button>
       </div>
     </div>
   </div>
@@ -140,45 +658,66 @@
   <div id="userMapSearchModal" class="map-search-modal">
     <div class="map-search-content">
       <div class="map-search-header">
-        <h3>🗺️ Search Location on Map</h3>
+        <h3>📍 Select Location on Map</h3>
         <button class="close-btn" onclick="closeMapSearch('user')">✕</button>
       </div>
-      <div style="padding: 15px; border-bottom: 1px solid var(--border);">
-        <input type="text" id="userSearchBox" placeholder="Search location by name or address...">
-        <div class="location-info" id="userLocationInfo" style="display:none;"></div>
+      <div class="map-search-bar-area">
+        <div class="map-search-input-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="userSearchBox" class="map-search-input"
+            placeholder="Search location by name, address or landmark..." autocomplete="off">
+          <div class="search-suggestions" id="userSuggestions"></div>
+        </div>
       </div>
-      <div id="userMapSearchContainer"></div>
+      <div class="map-search-map-wrap" id="userMapSearchContainer">
+        <div class="map-drag-hint" id="userDragHint">🖐 Drag the pin to fine-tune location</div>
+        <div class="map-coords-panel" id="userCoordsPanel"></div>
+      </div>
       <div class="map-search-footer">
+        <div class="map-selected-coords" id="userFooterCoords">No location selected yet</div>
         <button onclick="closeMapSearch('user')" style="background:#eee; color:#333">Cancel</button>
-        <button onclick="confirmMapLocation('user')" style="background:var(--success)">Confirm Location</button>
+        <button onclick="confirmMapLocation('user')" style="background:var(--success)"><i class="fas fa-check"></i>
+          Confirm</button>
       </div>
     </div>
   </div>
 
-  <div class="top-bar" id="topBar"><i class="fas fa-bars hamburger" onclick="toggleSidebar()"></i><span>ZennX Tracker</span></div>
+  <div class="top-bar" id="topBar"><i class="fas fa-bars hamburger" onclick="toggleSidebar()"></i><span>ZennX
+      Tracker</span></div>
   <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 
   <!-- ADMIN SIDEBAR -->
   <nav class="sidebar" id="mainSidebar">
-    <div class="sidebar-header"><span><i class="fas fa-shield-alt"></i> <b>ZennX</b> Admin</span><i class="fas fa-times" onclick="toggleSidebar()"></i></div>
+    <div class="sidebar-header"><span><i class="fas fa-shield-alt"></i> <b>ZennX</b> Admin</span><i class="fas fa-times"
+        onclick="toggleSidebar()"></i></div>
     <div class="nav-menu" style="flex:1">
-      <div class="nav-item active" onclick="switchView('dashboardView', this)"><i class="fas fa-th-large"></i><span>Dashboard</span></div>
-      <div class="nav-item" onclick="switchView('newVisitView', this)"><i class="fas fa-plus-circle"></i><span>New Visit</span></div>
-      <div class="nav-item" onclick="switchView('historyView', this)"><i class="fas fa-history"></i><span>Master History</span></div>
-      <div class="nav-item" onclick="switchView('mapView', this)"><i class="fas fa-map-marked-alt"></i><span>Live Tracking</span></div>
+      <div class="nav-item active" onclick="switchView('dashboardView', this)"><i
+          class="fas fa-th-large"></i><span>Dashboard</span></div>
+      <div class="nav-item" onclick="switchView('newVisitView', this)"><i class="fas fa-plus-circle"></i><span>New
+          Visit</span></div>
+      <div class="nav-item" onclick="switchView('historyView', this)"><i class="fas fa-history"></i><span>Master
+          History</span></div>
+      <div class="nav-item" onclick="switchView('mapView', this)"><i class="fas fa-map-marked-alt"></i><span>Live
+          Tracking</span></div>
     </div>
-    <div class="nav-item" onclick="openLogoutModal()" style="color:var(--danger); border-top:1px solid var(--border)"><i class="fas fa-sign-out-alt"></i><span>Logout</span></div>
+    <div class="nav-item" onclick="openLogoutModal()" style="color:var(--danger); border-top:1px solid var(--border)"><i
+        class="fas fa-sign-out-alt"></i><span>Logout</span></div>
   </nav>
 
   <!-- USER SIDEBAR -->
   <nav class="sidebar" id="userSidebar">
-    <div class="sidebar-header"><span><i class="fas fa-user-circle"></i> <b>ZennX</b> User</span><i class="fas fa-times" onclick="toggleSidebar()"></i></div>
+    <div class="sidebar-header"><span><i class="fas fa-user-circle"></i> <b>ZennX</b> User</span><i class="fas fa-times"
+        onclick="toggleSidebar()"></i></div>
     <div class="nav-menu" style="flex:1">
-      <div class="nav-item active" onclick="switchView('userDashboardView', this)"><i class="fas fa-th-large"></i><span>Dashboard</span></div>
-      <div class="nav-item" onclick="switchView('userNewVisitView', this)"><i class="fas fa-plus-circle"></i><span>New Visit</span></div>
-      <div class="nav-item" onclick="switchView('userHistoryView', this)"><i class="fas fa-history"></i><span>Visit History</span></div>
+      <div class="nav-item active" onclick="switchView('userDashboardView', this)"><i
+          class="fas fa-th-large"></i><span>Dashboard</span></div>
+      <div class="nav-item" onclick="switchView('userNewVisitView', this)"><i class="fas fa-plus-circle"></i><span>New
+          Visit</span></div>
+      <div class="nav-item" onclick="switchView('userHistoryView', this)"><i class="fas fa-history"></i><span>Visit
+          History</span></div>
     </div>
-    <div class="nav-item" onclick="openLogoutModal()" style="color:var(--danger); border-top:1px solid var(--border)"><i class="fas fa-sign-out-alt"></i><span>Logout</span></div>
+    <div class="nav-item" onclick="openLogoutModal()" style="color:var(--danger); border-top:1px solid var(--border)"><i
+        class="fas fa-sign-out-alt"></i><span>Logout</span></div>
   </nav>
 
   <main class="main-content" id="mainContent">
@@ -195,9 +734,18 @@
     <div id="dashboardView" class="view-container">
       <h1>Operational Analytics</h1>
       <div class="stats-grid">
-        <div class="stat-card"><h4>Total</h4><div id="statTotal">0</div></div>
-        <div class="stat-card"><h4>Active</h4><div id="statActive">0</div></div>
-        <div class="stat-card"><h4>New Reg</h4><div id="statNew">0</div></div>
+        <div class="stat-card">
+          <h4>Total</h4>
+          <div id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <h4>Active</h4>
+          <div id="statActive">0</div>
+        </div>
+        <div class="stat-card">
+          <h4>New Reg</h4>
+          <div id="statNew">0</div>
+        </div>
       </div>
       <div class="card">
         <h3>Export Data</h3>
@@ -205,47 +753,64 @@
           <input type="date" id="expFrom" style="flex:1; min-width:150px;">
           <input type="date" id="expTo" style="flex:1; min-width:150px;">
         </div>
-        <select id="expEmp"><option value="all">All Employees</option></select>
+        <select id="expEmp">
+          <option value="all">All Employees</option>
+        </select>
         <button onclick="exportToExcel()" style="background:var(--success)">Download Excel Report</button>
       </div>
     </div>
 
     <!-- ADMIN NEW VISIT -->
     <div id="newVisitView" class="view-container">
-        <div style="display:flex; justify-content:space-between; align-items:center"><h1>Field Report</h1><button onclick="openLogoutModal()" id="mobileLogout" style="width:auto; background:none; color:var(--danger)">Logout</button></div>
-        <div class="card">
-            <input type="text" id="clientName" placeholder="Client Name">
-            <input type="text" id="zid" placeholder="ZID (Optional)">
-            <input type="text" id="area" placeholder="Area">
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <select id="reg" style="flex:1"><option>Registered</option><option>Not Registered</option></select>
-              <select id="status" style="flex:1"><option>Active</option><option>Not Active</option><option>Occasional</option></select>
-            </div>
-            <textarea id="feedback" placeholder="Feedback/Notes"></textarea>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-              <button onclick="getLocation()" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍 Capture GPS</button>
-              <button onclick="openMapSearch('admin')" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️ Search on Map</button>
-            </div>
-            <p id="locText" style="text-align:center; font-size:0.8rem;">Location not set</p>
-            <input type="file" id="selfie" accept="image/*" placeholder="Upload Photo">
-            <button id="submitBtn" onclick="submitVisit()">Submit Report ✅</button>
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <h1>Field Report</h1><button onclick="openLogoutModal()" id="mobileLogout"
+          style="width:auto; background:none; color:var(--danger)">Logout</button>
+      </div>
+      <div class="card">
+        <input type="text" id="clientName" placeholder="Client Name">
+        <input type="text" id="zid" placeholder="ZID (Optional)">
+        <input type="text" id="area" placeholder="Area">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <select id="reg" style="flex:1">
+            <option>Registered</option>
+            <option>Not Registered</option>
+          </select>
+          <select id="status" style="flex:1">
+            <option>Active</option>
+            <option>Not Active</option>
+            <option>Occasional</option>
+          </select>
         </div>
+        <textarea id="feedback" placeholder="Feedback/Notes"></textarea>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <button onclick="getLocation()"
+            style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍
+            Capture GPS</button>
+          <button onclick="openMapSearch('admin')"
+            style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️
+            Search on Map</button>
+        </div>
+        <p id="locText" style="text-align:center; font-size:0.8rem;">Location not set</p>
+        <input type="file" id="selfie" accept="image/*" placeholder="Upload Photo">
+        <button id="submitBtn" onclick="submitVisit()">Submit Report ✅</button>
+      </div>
 
-        <div id="summaryCard" class="card" style="display:none; background: #eef;">
-            <h4 style="margin-top:0">📋 Visit Summary</h4>
-            <textarea id="visitSummaryText" rows="7" readonly style="background:white"></textarea>
-            <button onclick="copyVisitText()" style="background:#25D366"><i class="fab fa-whatsapp"></i> Copy for WhatsApp</button>
-        </div>
+      <div id="summaryCard" class="card" style="display:none; background: #eef;">
+        <h4 style="margin-top:0">📋 Visit Summary</h4>
+        <textarea id="visitSummaryText" rows="7" readonly style="background:white"></textarea>
+        <button onclick="copyVisitText()" style="background:#25D366"><i class="fab fa-whatsapp"></i> Copy for
+          WhatsApp</button>
+      </div>
     </div>
 
     <!-- ADMIN HISTORY -->
     <div id="historyView" class="view-container">
       <h1>Historical Data</h1>
       <div class="card filter-row">
-          <input type="text" id="hEmpFilter" placeholder="Employee Email" style="flex:2; min-width:200px">
-          <input type="date" id="hDateFilter" style="flex:1; min-width:150px">
-          <button onclick="applyFilters()">Search</button>
-          <button onclick="resetFilters()" style="background:#eee; color:#333">Clear</button>
+        <input type="text" id="hEmpFilter" placeholder="Employee Email" style="flex:2; min-width:200px">
+        <input type="date" id="hDateFilter" style="flex:1; min-width:150px">
+        <button onclick="applyFilters()">Search</button>
+        <button onclick="resetFilters()" style="background:#eee; color:#333">Clear</button>
       </div>
       <div id="dataList"></div>
     </div>
@@ -256,7 +821,9 @@
       <div class="card">
         <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
           <input type="date" id="mapDateFilter" style="flex:1; min-width:150px;">
-          <select id="mapEmpFilter" style="flex:1; min-width:150px;"><option value="">All Staff</option></select>
+          <select id="mapEmpFilter" style="flex:1; min-width:150px;">
+            <option value="">All Staff</option>
+          </select>
           <button onclick="updateMap()" style="width:auto">Refresh Path</button>
         </div>
         <div id="map"></div>
@@ -267,8 +834,14 @@
     <div id="userDashboardView" class="view-container">
       <h1>My Dashboard</h1>
       <div class="stats-grid">
-        <div class="stat-card"><h4>Total Visits</h4><div id="userStatTotal">0</div></div>
-        <div class="stat-card"><h4>This Month</h4><div id="userStatMonth">0</div></div>
+        <div class="stat-card">
+          <h4>Total Visits</h4>
+          <div id="userStatTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <h4>This Month</h4>
+          <div id="userStatMonth">0</div>
+        </div>
       </div>
       <div class="card">
         <h3>Export My Data</h3>
@@ -282,39 +855,54 @@
 
     <!-- USER NEW VISIT -->
     <div id="userNewVisitView" class="view-container">
-        <div style="display:flex; justify-content:space-between; align-items:center"><h1>New Visit</h1><button onclick="openLogoutModal()" id="userMobileLogout" style="width:auto; background:none; color:var(--danger)">Logout</button></div>
-        <div class="card">
-            <input type="text" id="userClientName" placeholder="Client Name">
-            <input type="text" id="userZid" placeholder="ZID (Optional)">
-            <input type="text" id="userArea" placeholder="Area">
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <select id="userReg" style="flex:1"><option>Registered</option><option>Not Registered</option></select>
-              <select id="userStatus" style="flex:1"><option>Active</option><option>Not Active</option><option>Occasional</option></select>
-            </div>
-            <textarea id="userFeedback" placeholder="Feedback/Notes"></textarea>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-              <button onclick="userGetLocation()" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍 Capture GPS</button>
-              <button onclick="openMapSearch('user')" style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️ Search on Map</button>
-            </div>
-            <p id="userLocText" style="text-align:center; font-size:0.8rem;">Location not set</p>
-            <input type="file" id="userSelfie" accept="image/*" placeholder="Upload Photo">
-            <button id="userSubmitBtn" onclick="userSubmitVisit()">Submit Report ✅</button>
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <h1>New Visit</h1><button onclick="openLogoutModal()" id="userMobileLogout"
+          style="width:auto; background:none; color:var(--danger)">Logout</button>
+      </div>
+      <div class="card">
+        <input type="text" id="userClientName" placeholder="Client Name">
+        <input type="text" id="userZid" placeholder="ZID (Optional)">
+        <input type="text" id="userArea" placeholder="Area">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <select id="userReg" style="flex:1">
+            <option>Registered</option>
+            <option>Not Registered</option>
+          </select>
+          <select id="userStatus" style="flex:1">
+            <option>Active</option>
+            <option>Not Active</option>
+            <option>Occasional</option>
+          </select>
         </div>
+        <textarea id="userFeedback" placeholder="Feedback/Notes"></textarea>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <button onclick="userGetLocation()"
+            style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍
+            Capture GPS</button>
+          <button onclick="openMapSearch('user')"
+            style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️
+            Search on Map</button>
+        </div>
+        <p id="userLocText" style="text-align:center; font-size:0.8rem;">Location not set</p>
+        <input type="file" id="userSelfie" accept="image/*" placeholder="Upload Photo">
+        <button id="userSubmitBtn" onclick="userSubmitVisit()">Submit Report ✅</button>
+      </div>
 
-        <div id="userSummaryCard" class="card" style="display:none; background: #eef;">
-            <h4 style="margin-top:0">📋 Visit Summary</h4>
-            <textarea id="userVisitSummaryText" rows="7" readonly style="background:white"></textarea>
-            <button onclick="userCopyVisitText()" style="background:#25D366"><i class="fab fa-whatsapp"></i> Copy for WhatsApp</button>
-        </div>
+      <div id="userSummaryCard" class="card" style="display:none; background: #eef;">
+        <h4 style="margin-top:0">📋 Visit Summary</h4>
+        <textarea id="userVisitSummaryText" rows="7" readonly style="background:white"></textarea>
+        <button onclick="userCopyVisitText()" style="background:#25D366"><i class="fab fa-whatsapp"></i> Copy for
+          WhatsApp</button>
+      </div>
     </div>
 
     <!-- USER HISTORY -->
     <div id="userHistoryView" class="view-container">
       <h1>My Visit History</h1>
       <div class="card filter-row">
-          <input type="date" id="userHDateFilter" style="flex:1; min-width:150px">
-          <button onclick="applyUserFilters()">Search</button>
-          <button onclick="resetUserFilters()" style="background:#eee; color:#333">Clear</button>
+        <input type="date" id="userHDateFilter" style="flex:1; min-width:150px">
+        <button onclick="applyUserFilters()">Search</button>
+        <button onclick="resetUserFilters()" style="background:#eee; color:#333">Clear</button>
       </div>
       <div id="userDataList"></div>
     </div>
@@ -356,124 +944,202 @@
       document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      if(el) el.classList.add('active');
-      if(window.innerWidth <= 850) {
-          const adminSidebar = document.getElementById('mainSidebar');
-          const userSidebar = document.getElementById('userSidebar');
-          const visibleSidebar = adminSidebar.style.display === 'flex' ? adminSidebar : userSidebar;
-          if(visibleSidebar.classList.contains('open')) toggleSidebar();
+      if (el) el.classList.add('active');
+      if (window.innerWidth <= 850) {
+        const adminSidebar = document.getElementById('mainSidebar');
+        const userSidebar = document.getElementById('userSidebar');
+        const visibleSidebar = adminSidebar.style.display === 'flex' ? adminSidebar : userSidebar;
+        if (visibleSidebar.classList.contains('open')) toggleSidebar();
       }
-      if(id !== 'loginView') loadData();
+      if (id !== 'loginView') loadData();
     };
 
     // --- AUTH & LOGOUT MODAL ---
     window.login = () => signInWithEmailAndPassword(auth, email.value, password.value).catch(e => alert(e.message));
-    
+
     window.openLogoutModal = () => document.getElementById('logoutModal').style.display = 'flex';
     window.closeLogoutModal = () => document.getElementById('logoutModal').style.display = 'none';
     window.confirmLogout = () => signOut(auth).then(() => location.reload());
 
-    // --- MAP SEARCH FUNCTIONS ---
+    // --- MAP SEARCH FUNCTIONS (Draggable Pin + Instant Search) ---
+    let adminSearchDebounce, userSearchDebounce;
+
+    function updateCoordsUI(type, latVal, lngVal, address) {
+      const coordsPanel = document.getElementById(type === 'admin' ? 'adminCoordsPanel' : 'userCoordsPanel');
+      const footerCoords = document.getElementById(type === 'admin' ? 'adminFooterCoords' : 'userFooterCoords');
+      const coordStr = `${latVal.toFixed(6)}, ${lngVal.toFixed(6)}`;
+      coordsPanel.textContent = `📍 ${coordStr}`;
+      coordsPanel.style.display = 'block';
+      if (address) {
+        footerCoords.innerHTML = `<b style="color:#222">${address.split(',').slice(0, 2).join(',')}</b><br><span>${coordStr}</span>`;
+      } else {
+        footerCoords.innerHTML = `Lat: <span>${latVal.toFixed(6)}</span> &nbsp; Lng: <span>${lngVal.toFixed(6)}</span>`;
+      }
+      // fade hint after first selection
+      const hint = document.getElementById(type === 'admin' ? 'adminDragHint' : 'userDragHint');
+      if (hint) { hint.style.opacity = '0'; setTimeout(() => hint.style.display = 'none', 400); }
+    }
+
+    function placeOrMoveMarker(type, position, mapInstance, address) {
+      const latVal = typeof position.lat === 'function' ? position.lat() : position.lat;
+      const lngVal = typeof position.lng === 'function' ? position.lng() : position.lng;
+      const latLng = new google.maps.LatLng(latVal, lngVal);
+
+      if (type === 'admin') {
+        if (adminMarker) {
+          adminMarker.setPosition(latLng);
+        } else {
+          adminMarker = new google.maps.Marker({
+            position: latLng, map: mapInstance, draggable: true,
+            animation: google.maps.Animation.DROP,
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png', scaledSize: new google.maps.Size(40, 40) }
+          });
+          adminMarker.addListener('drag', (e) => updateCoordsUI('admin', e.latLng.lat(), e.latLng.lng(), null));
+          adminMarker.addListener('dragend', (e) => reverseGeocode('admin', e.latLng));
+        }
+      } else {
+        if (userMarker) {
+          userMarker.setPosition(latLng);
+        } else {
+          userMarker = new google.maps.Marker({
+            position: latLng, map: mapInstance, draggable: true,
+            animation: google.maps.Animation.DROP,
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png', scaledSize: new google.maps.Size(40, 40) }
+          });
+          userMarker.addListener('drag', (e) => updateCoordsUI('user', e.latLng.lat(), e.latLng.lng(), null));
+          userMarker.addListener('dragend', (e) => reverseGeocode('user', e.latLng));
+        }
+      }
+      updateCoordsUI(type, latVal, lngVal, address);
+    }
+
+    function reverseGeocode(type, latLng) {
+      if (!geocoder) geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ location: latLng }, (results, status) => {
+        const addr = status === 'OK' && results[0] ? results[0].formatted_address : null;
+        updateCoordsUI(type, latLng.lat(), latLng.lng(), addr);
+        const searchBox = document.getElementById(type === 'admin' ? 'adminSearchBox' : 'userSearchBox');
+        if (addr) searchBox.value = addr;
+      });
+    }
+
+    function buildInstantSearch(type) {
+      const inputId = type === 'admin' ? 'adminSearchBox' : 'userSearchBox';
+      const suggestId = type === 'admin' ? 'adminSuggestions' : 'userSuggestions';
+      const input = document.getElementById(inputId);
+      const suggestBox = document.getElementById(suggestId);
+
+      function closeSuggestions() { suggestBox.style.display = 'none'; suggestBox.innerHTML = ''; }
+
+      input.addEventListener('input', () => {
+        const q = input.value.trim();
+        clearTimeout(type === 'admin' ? adminSearchDebounce : userSearchDebounce);
+        if (q.length < 3) { closeSuggestions(); return; }
+
+        suggestBox.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+        suggestBox.style.display = 'block';
+
+        const debounce = setTimeout(() => {
+          if (!geocoder) geocoder = new google.maps.Geocoder();
+          geocoder.geocode({ address: q + ', India' }, (results, status) => {
+            if (status === 'OK' && results.length > 0) {
+              suggestBox.innerHTML = '';
+              results.slice(0, 6).forEach(r => {
+                const parts = r.formatted_address.split(',');
+                const mainPart = parts.slice(0, 2).join(',').trim();
+                const subPart = parts.slice(2).join(',').trim();
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerHTML = `<i class="fas fa-map-marker-alt"></i><div><div class="suggestion-main">${mainPart}</div><div class="suggestion-sub">${subPart}</div></div>`;
+                item.addEventListener('click', () => {
+                  closeSuggestions();
+                  input.value = r.formatted_address;
+                  const mapInstance = type === 'admin' ? adminMapSearch : userMapSearch;
+                  const loc = r.geometry.location;
+                  mapInstance.setCenter(loc);
+                  mapInstance.setZoom(16);
+                  placeOrMoveMarker(type, loc, mapInstance, r.formatted_address);
+                });
+                suggestBox.appendChild(item);
+              });
+              suggestBox.style.display = 'block';
+            } else {
+              suggestBox.innerHTML = '<div class="search-loading"><i class="fas fa-exclamation-circle"></i> No results found</div>';
+            }
+          });
+        }, 350);
+        if (type === 'admin') adminSearchDebounce = debounce; else userSearchDebounce = debounce;
+      });
+
+      input.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSuggestions(); });
+      document.addEventListener('click', (e) => { if (!e.target.closest('.map-search-bar-area')) closeSuggestions(); });
+    }
+
     window.openMapSearch = (type) => {
       const modalId = type === 'admin' ? 'adminMapSearchModal' : 'userMapSearchModal';
       const containerId = type === 'admin' ? 'adminMapSearchContainer' : 'userMapSearchContainer';
       document.getElementById(modalId).style.display = 'flex';
-      
+
+      // Reset hint visibility
+      const hint = document.getElementById(type === 'admin' ? 'adminDragHint' : 'userDragHint');
+      if (hint) { hint.style.opacity = '1'; hint.style.display = 'block'; }
+
       setTimeout(() => {
-        const mapElement = document.getElementById(containerId);
-        mapElement.innerHTML = '<div id="' + (type === 'admin' ? 'adminMap' : 'userMap') + '" style="width:100%; height:100%;"></div>';
-        
         const mapId = type === 'admin' ? 'adminMap' : 'userMap';
-        const defaultCenter = { lat: 20.5937, lng: 78.9629 }; // India center
-        
+        const container = document.getElementById(containerId);
+        const defaultCenter = { lat: 20.5937, lng: 78.9629 };
+
+        // Inject map div BEFORE map elements (before hint/coords panel)
+        if (!document.getElementById(mapId)) {
+          const mapDiv = document.createElement('div');
+          mapDiv.id = mapId;
+          mapDiv.style.cssText = 'width:100%; height:100%; position:absolute; top:0; left:0;';
+          container.insertBefore(mapDiv, container.firstChild);
+        }
+
         if (type === 'admin') {
           if (!adminMapSearch) {
-            adminMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
             geocoder = new google.maps.Geocoder();
-            
+            adminMapSearch = new google.maps.Map(document.getElementById(mapId), {
+              zoom: 5, center: defaultCenter,
+              mapTypeControl: false, streetViewControl: false,
+              fullscreenControl: false
+            });
             adminMapSearch.addListener('click', (e) => {
-              if (adminMarker) adminMarker.setMap(null);
-              adminMarker = new google.maps.Marker({ position: e.latLng, map: adminMapSearch });
-              document.getElementById('adminLocationInfo').innerText = `📍 Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`;
-              document.getElementById('adminLocationInfo').style.display = 'block';
+              const mapInstance = adminMapSearch;
+              placeOrMoveMarker('admin', e.latLng, mapInstance, null);
+              reverseGeocode('admin', e.latLng);
             });
-            
-            // Search functionality
-            document.getElementById('adminSearchBox').addEventListener('keypress', (e) => {
-              if (e.key === 'Enter') searchLocation(type);
-            });
-            document.getElementById('adminSearchBox').addEventListener('change', () => searchLocation(type));
-          } else {
-            new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
-            adminMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+            buildInstantSearch('admin');
           }
         } else {
           if (!userMapSearch) {
-            userMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
             if (!geocoder) geocoder = new google.maps.Geocoder();
-            
+            userMapSearch = new google.maps.Map(document.getElementById(mapId), {
+              zoom: 5, center: defaultCenter,
+              mapTypeControl: false, streetViewControl: false,
+              fullscreenControl: false
+            });
             userMapSearch.addListener('click', (e) => {
-              if (userMarker) userMarker.setMap(null);
-              userMarker = new google.maps.Marker({ position: e.latLng, map: userMapSearch });
-              document.getElementById('userLocationInfo').innerText = `📍 Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`;
-              document.getElementById('userLocationInfo').style.display = 'block';
+              placeOrMoveMarker('user', e.latLng, userMapSearch, null);
+              reverseGeocode('user', e.latLng);
             });
-            
-            // Search functionality
-            document.getElementById('userSearchBox').addEventListener('keypress', (e) => {
-              if (e.key === 'Enter') searchLocation(type);
-            });
-            document.getElementById('userSearchBox').addEventListener('change', () => searchLocation(type));
-          } else {
-            new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
-            userMapSearch = new google.maps.Map(document.getElementById(mapId), { zoom: 5, center: defaultCenter });
+            buildInstantSearch('user');
           }
         }
-      }, 100);
-    };
-
-    window.searchLocation = (type) => {
-      const searchBoxId = type === 'admin' ? 'adminSearchBox' : 'userSearchBox';
-      const address = document.getElementById(searchBoxId).value;
-      const mapInstance = type === 'admin' ? adminMapSearch : userMapSearch;
-      const markerRef = type === 'admin' ? adminMarker : userMarker;
-      
-      if (!address) return alert('Please enter a location to search');
-      
-      geocoder.geocode({ address: address }, (results, status) => {
-        if (status === 'OK') {
-          const location = results[0].geometry.location;
-          mapInstance.setCenter(location);
-          mapInstance.setZoom(15);
-          
-          if (markerRef) markerRef.setMap(null);
-          if (type === 'admin') {
-            adminMarker = new google.maps.Marker({ position: location, map: mapInstance });
-          } else {
-            userMarker = new google.maps.Marker({ position: location, map: mapInstance });
-          }
-          
-          document.getElementById(type === 'admin' ? 'adminLocationInfo' : 'userLocationInfo').innerText = `📍 ${results[0].formatted_address} | Lat: ${location.lat().toFixed(6)}, Lng: ${location.lng().toFixed(6)}`;
-          document.getElementById(type === 'admin' ? 'adminLocationInfo' : 'userLocationInfo').style.display = 'block';
-        } else {
-          alert('Location not found. Please try another search.');
-        }
-      });
+      }, 120);
     };
 
     window.confirmMapLocation = (type) => {
       const marker = type === 'admin' ? adminMarker : userMarker;
-      if (!marker) return alert('Please select a location on the map');
-      
+      if (!marker) return alert('Please select a location on the map first. Click on the map or search for a place.');
       const position = marker.getPosition();
       if (type === 'admin') {
-        lat = position.lat();
-        lng = position.lng();
-        locText.innerText = `Captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        lat = position.lat(); lng = position.lng();
+        locText.innerText = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
       } else {
-        userLat = position.lat();
-        userLng = position.lng();
-        userLocText.innerText = `Captured: ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`;
+        userLat = position.lat(); userLng = position.lng();
+        userLocText.innerText = `📍 ${userLat.toFixed(5)}, ${userLng.toFixed(5)}`;
       }
       closeMapSearch(type);
     };
@@ -481,6 +1147,8 @@
     window.closeMapSearch = (type) => {
       const modalId = type === 'admin' ? 'adminMapSearchModal' : 'userMapSearchModal';
       document.getElementById(modalId).style.display = 'none';
+      const suggestId = type === 'admin' ? 'adminSuggestions' : 'userSuggestions';
+      document.getElementById(suggestId).style.display = 'none';
     };
 
     onAuthStateChanged(auth, (user) => {
@@ -488,7 +1156,7 @@
         currentUser = user.email;
         document.getElementById('loginView').style.display = 'none';
         const isAdmin = ["zennx.usm@gmail.com", "saisnd70@gmail.com"].includes(user.email);
-        
+
         if (isAdmin) {
           // ADMIN INTERFACE
           document.getElementById('mainSidebar').style.display = 'flex';
@@ -511,169 +1179,169 @@
 
     // --- ADMIN FIELD REPORT LOGIC ---
     window.getLocation = () => navigator.geolocation.getCurrentPosition(p => {
-        lat = p.coords.latitude; lng = p.coords.longitude;
-        locText.innerText = `Captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      lat = p.coords.latitude; lng = p.coords.longitude;
+      locText.innerText = `Captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     }, (err) => alert("Please enable GPS"));
 
     window.submitVisit = async () => {
-        const file = selfie.files[0]; 
-        if(!lat || !lng || !file) return alert("Missing GPS or Photo!");
-        submitBtn.disabled = true;
-        submitBtn.innerText = "Uploading...";
-        
-        try {
-            const sRef = ref(storage, `v/${Date.now()}`);
-            await uploadBytes(sRef, file);
-            const url = await getDownloadURL(sRef);
-            const visitDate = new Date();
+      const file = selfie.files[0];
+      if (!lat || !lng || !file) return alert("Missing GPS or Photo!");
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Uploading...";
 
-            const visitData = { 
-                employee: currentUser, 
-                clientName: clientName.value, 
-                zid: zid.value || 'N/A',
-                area: area.value, 
-                registered: reg.value, 
-                orderStatus: status.value, 
-                feedback: feedback.value, 
-                latitude: lat, 
-                longitude: lng, 
-                imageUrl: url, 
-                time: visitDate 
-            };
+      try {
+        const sRef = ref(storage, `v/${Date.now()}`);
+        await uploadBytes(sRef, file);
+        const url = await getDownloadURL(sRef);
+        const visitDate = new Date();
 
-            await addDoc(collection(db, "visits"), visitData);
+        const visitData = {
+          employee: currentUser,
+          clientName: clientName.value,
+          zid: zid.value || 'N/A',
+          area: area.value,
+          registered: reg.value,
+          orderStatus: status.value,
+          feedback: feedback.value,
+          latitude: lat,
+          longitude: lng,
+          imageUrl: url,
+          time: visitDate
+        };
 
-            const waText = `📍 *Visit Update*\n\n` +
-                `👨‍💼 *Employee:* ${currentUser}\n` +
-                `🏪 *Client:* ${clientName.value}\n` +
-                `🆔 *ZID:* ${zid.value || 'N/A'}\n` +
-                `📍 *Area:* ${area.value}\n` +
-                `📊 *Status:* ${status.value}\n` +
-                `📝 *Feedback:* ${feedback.value || "-"}\n` +
-                `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
-                `📌 *Location:* https://www.google.com/maps?q=${lat},${lng}`;
+        await addDoc(collection(db, "visits"), visitData);
 
-            document.getElementById('visitSummaryText').value = waText;
-            document.getElementById('summaryCard').style.display = 'block';
-            submitBtn.innerText = "Submitted Successfully!";
-            alert("Report Saved!");
-        } catch (e) {
-            alert("Error: " + e.message);
-            submitBtn.disabled = false;
-        }
+        const waText = `📍 *Visit Update*\n\n` +
+          `👨‍💼 *Employee:* ${currentUser}\n` +
+          `🏪 *Client:* ${clientName.value}\n` +
+          `🆔 *ZID:* ${zid.value || 'N/A'}\n` +
+          `📍 *Area:* ${area.value}\n` +
+          `📊 *Status:* ${status.value}\n` +
+          `📝 *Feedback:* ${feedback.value || "-"}\n` +
+          `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
+          `📌 *Location:* https://www.google.com/maps?q=${lat},${lng}`;
+
+        document.getElementById('visitSummaryText').value = waText;
+        document.getElementById('summaryCard').style.display = 'block';
+        submitBtn.innerText = "Submitted Successfully!";
+        alert("Report Saved!");
+      } catch (e) {
+        alert("Error: " + e.message);
+        submitBtn.disabled = false;
+      }
     };
 
     window.copyVisitText = () => {
-        const copyText = document.getElementById("visitSummaryText");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(copyText.value);
-        alert("Copied to clipboard!");
+      const copyText = document.getElementById("visitSummaryText");
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(copyText.value);
+      alert("Copied to clipboard!");
     };
 
     // --- USER FIELD REPORT LOGIC ---
     window.userGetLocation = () => navigator.geolocation.getCurrentPosition(p => {
-        userLat = p.coords.latitude; userLng = p.coords.longitude;
-        userLocText.innerText = `Captured: ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`;
+      userLat = p.coords.latitude; userLng = p.coords.longitude;
+      userLocText.innerText = `Captured: ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`;
     }, (err) => alert("Please enable GPS"));
 
     window.userSubmitVisit = async () => {
-        const file = userSelfie.files[0]; 
-        if(!userLat || !userLng || !file) return alert("Missing GPS or Photo!");
-        userSubmitBtn.disabled = true;
-        userSubmitBtn.innerText = "Uploading...";
-        
-        try {
-            const sRef = ref(storage, `v/${Date.now()}`);
-            await uploadBytes(sRef, file);
-            const url = await getDownloadURL(sRef);
-            const visitDate = new Date();
+      const file = userSelfie.files[0];
+      if (!userLat || !userLng || !file) return alert("Missing GPS or Photo!");
+      userSubmitBtn.disabled = true;
+      userSubmitBtn.innerText = "Uploading...";
 
-            const visitData = { 
-                employee: currentUser, 
-                clientName: userClientName.value, 
-                zid: userZid.value || 'N/A',
-                area: userArea.value, 
-                registered: userReg.value, 
-                orderStatus: userStatus.value, 
-                feedback: userFeedback.value, 
-                latitude: userLat, 
-                longitude: userLng, 
-                imageUrl: url, 
-                time: visitDate 
-            };
+      try {
+        const sRef = ref(storage, `v/${Date.now()}`);
+        await uploadBytes(sRef, file);
+        const url = await getDownloadURL(sRef);
+        const visitDate = new Date();
 
-            await addDoc(collection(db, "visits"), visitData);
+        const visitData = {
+          employee: currentUser,
+          clientName: userClientName.value,
+          zid: userZid.value || 'N/A',
+          area: userArea.value,
+          registered: userReg.value,
+          orderStatus: userStatus.value,
+          feedback: userFeedback.value,
+          latitude: userLat,
+          longitude: userLng,
+          imageUrl: url,
+          time: visitDate
+        };
 
-            const waText = `📍 *Visit Update*\n\n` +
-                `👨‍💼 *Employee:* ${currentUser}\n` +
-                `🏪 *Client:* ${userClientName.value}\n` +
-                `🆔 *ZID:* ${userZid.value || 'N/A'}\n` +
-                `📍 *Area:* ${userArea.value}\n` +
-                `📊 *Status:* ${userStatus.value}\n` +
-                `📝 *Feedback:* ${userFeedback.value || "-"}\n` +
-                `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
-                `📌 *Location:* https://www.google.com/maps?q=${userLat},${userLng}`;
+        await addDoc(collection(db, "visits"), visitData);
 
-            document.getElementById('userVisitSummaryText').value = waText;
-            document.getElementById('userSummaryCard').style.display = 'block';
-            userSubmitBtn.innerText = "Submitted Successfully!";
-            alert("Report Saved!");
-            loadData();
-        } catch (e) {
-            alert("Error: " + e.message);
-            userSubmitBtn.disabled = false;
-        }
+        const waText = `📍 *Visit Update*\n\n` +
+          `👨‍💼 *Employee:* ${currentUser}\n` +
+          `🏪 *Client:* ${userClientName.value}\n` +
+          `🆔 *ZID:* ${userZid.value || 'N/A'}\n` +
+          `📍 *Area:* ${userArea.value}\n` +
+          `📊 *Status:* ${userStatus.value}\n` +
+          `📝 *Feedback:* ${userFeedback.value || "-"}\n` +
+          `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
+          `📌 *Location:* https://www.google.com/maps?q=${userLat},${userLng}`;
+
+        document.getElementById('userVisitSummaryText').value = waText;
+        document.getElementById('userSummaryCard').style.display = 'block';
+        userSubmitBtn.innerText = "Submitted Successfully!";
+        alert("Report Saved!");
+        loadData();
+      } catch (e) {
+        alert("Error: " + e.message);
+        userSubmitBtn.disabled = false;
+      }
     };
 
     window.userCopyVisitText = () => {
-        const copyText = document.getElementById("userVisitSummaryText");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(copyText.value);
-        alert("Copied to clipboard!");
+      const copyText = document.getElementById("userVisitSummaryText");
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(copyText.value);
+      alert("Copied to clipboard!");
     };
 
     // --- DATA LOADING & FILTERING ---
     async function loadData() {
-        const snap = await getDocs(query(collection(db, "visits"), orderBy("time", "asc")));
-        masterData = []; 
-        snap.forEach(doc => masterData.push(doc.data()));
-        updateStats();
-        renderHistory(masterData);
-        updateUserStats();
-        renderUserHistory(masterData.filter(d => d.employee === currentUser));
+      const snap = await getDocs(query(collection(db, "visits"), orderBy("time", "asc")));
+      masterData = [];
+      snap.forEach(doc => masterData.push(doc.data()));
+      updateStats();
+      renderHistory(masterData);
+      updateUserStats();
+      renderUserHistory(masterData.filter(d => d.employee === currentUser));
     }
 
     function updateStats() {
-        statTotal.innerText = masterData.length;
-        statActive.innerText = masterData.filter(d => d.orderStatus === 'Active').length;
-        statNew.innerText = masterData.filter(d => d.registered === 'Not Registered').length;
-        const emps = [...new Set(masterData.map(d => d.employee))];
-        expEmp.innerHTML = '<option value="all">All Employees</option>' + emps.map(e => `<option>${e}</option>`).join('');
-        mapEmpFilter.innerHTML = '<option value="">All Staff</option>' + emps.map(e => `<option>${e}</option>`).join('');
+      statTotal.innerText = masterData.length;
+      statActive.innerText = masterData.filter(d => d.orderStatus === 'Active').length;
+      statNew.innerText = masterData.filter(d => d.registered === 'Not Registered').length;
+      const emps = [...new Set(masterData.map(d => d.employee))];
+      expEmp.innerHTML = '<option value="all">All Employees</option>' + emps.map(e => `<option>${e}</option>`).join('');
+      mapEmpFilter.innerHTML = '<option value="">All Staff</option>' + emps.map(e => `<option>${e}</option>`).join('');
     }
 
     function updateUserStats() {
-        const userData = masterData.filter(d => d.employee === currentUser);
-        userStatTotal.innerText = userData.length;
-        
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const monthData = userData.filter(d => {
-            const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
-            return dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear;
-        });
-        userStatMonth.innerText = monthData.length;
+      const userData = masterData.filter(d => d.employee === currentUser);
+      userStatTotal.innerText = userData.length;
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const monthData = userData.filter(d => {
+        const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+        return dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear;
+      });
+      userStatMonth.innerText = monthData.length;
     }
 
     // --- ADMIN HISTORY UI RENDERING ---
     function renderHistory(data) {
-        const displayData = [...data].reverse();
-        dataList.innerHTML = displayData.map(d => {
-            const dateObj = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
-            return `
+      const displayData = [...data].reverse();
+      dataList.innerHTML = displayData.map(d => {
+        const dateObj = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+        return `
             <div class="hist-card">
                 <div class="hist-header">
                     <span class="hist-name">${d.employee.split('@')[0]}</span>
@@ -694,10 +1362,10 @@
 
     // --- USER HISTORY UI RENDERING ---
     function renderUserHistory(data) {
-        const displayData = [...data].reverse();
-        userDataList.innerHTML = displayData.map(d => {
-            const dateObj = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
-            return `
+      const displayData = [...data].reverse();
+      userDataList.innerHTML = displayData.map(d => {
+        const dateObj = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+        return `
             <div class="hist-card">
                 <div class="hist-header">
                     <span class="hist-name">${d.clientName}</span>
@@ -716,120 +1384,121 @@
     }
 
     window.applyFilters = () => {
-        const date = hDateFilter.value;
-        const emp = hEmpFilter.value.toLowerCase();
-        const filtered = masterData.filter(d => {
-            const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
-            return (!date || dDate === date) && (!emp || d.employee.toLowerCase().includes(emp));
-        });
-        renderHistory(filtered);
+      const date = hDateFilter.value;
+      const emp = hEmpFilter.value.toLowerCase();
+      const filtered = masterData.filter(d => {
+        const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
+        return (!date || dDate === date) && (!emp || d.employee.toLowerCase().includes(emp));
+      });
+      renderHistory(filtered);
     };
 
     window.resetFilters = () => {
-        hDateFilter.value = "";
-        hEmpFilter.value = "";
-        renderHistory(masterData);
+      hDateFilter.value = "";
+      hEmpFilter.value = "";
+      renderHistory(masterData);
     };
 
     window.applyUserFilters = () => {
-        const date = userHDateFilter.value;
-        const userData = masterData.filter(d => d.employee === currentUser);
-        const filtered = userData.filter(d => {
-            const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
-            return !date || dDate === date;
-        });
-        renderUserHistory(filtered);
+      const date = userHDateFilter.value;
+      const userData = masterData.filter(d => d.employee === currentUser);
+      const filtered = userData.filter(d => {
+        const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
+        return !date || dDate === date;
+      });
+      renderUserHistory(filtered);
     };
 
     window.resetUserFilters = () => {
-        userHDateFilter.value = "";
-        renderUserHistory(masterData.filter(d => d.employee === currentUser));
+      userHDateFilter.value = "";
+      renderUserHistory(masterData.filter(d => d.employee === currentUser));
     };
 
     // --- MAP TRACKING ---
     function initMap() {
-        if (!googleMap) googleMap = new google.maps.Map(document.getElementById("map"), { zoom: 5, center: { lat: 20.5937, lng: 78.9629 } });
-        updateMap();
+      if (!googleMap) googleMap = new google.maps.Map(document.getElementById("map"), { zoom: 5, center: { lat: 20.5937, lng: 78.9629 } });
+      updateMap();
     }
 
     window.updateMap = () => {
-        const date = mapDateFilter.value;
-        const emp = mapEmpFilter.value;
-        markers.forEach(m => m.setMap(null)); markers = [];
-        if (polyline) polyline.setMap(null);
+      const date = mapDateFilter.value;
+      const emp = mapEmpFilter.value;
+      markers.forEach(m => m.setMap(null)); markers = [];
+      if (polyline) polyline.setMap(null);
 
-        const filtered = masterData.filter(d => {
-            const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
-            return (!date || dDate === date) && (!emp || d.employee === emp);
-        });
+      const filtered = masterData.filter(d => {
+        const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
+        return (!date || dDate === date) && (!emp || d.employee === emp);
+      });
 
-        const path = [];
-        const bounds = new google.maps.LatLngBounds();
-        filtered.forEach((d, i) => {
-            const pos = { lat: d.latitude, lng: d.longitude };
-            path.push(pos);
-            bounds.extend(pos);
-            markers.push(new google.maps.Marker({ position: pos, map: googleMap, label: (i + 1).toString(), title: d.clientName }));
-        });
+      const path = [];
+      const bounds = new google.maps.LatLngBounds();
+      filtered.forEach((d, i) => {
+        const pos = { lat: d.latitude, lng: d.longitude };
+        path.push(pos);
+        bounds.extend(pos);
+        markers.push(new google.maps.Marker({ position: pos, map: googleMap, label: (i + 1).toString(), title: d.clientName }));
+      });
 
-        if (path.length > 1) {
-            polyline = new google.maps.Polyline({ path: path, geodesic: true, strokeColor: "#0078D4", strokeWeight: 3 });
-            polyline.setMap(googleMap);
-        }
-        if (filtered.length > 0) googleMap.fitBounds(bounds);
+      if (path.length > 1) {
+        polyline = new google.maps.Polyline({ path: path, geodesic: true, strokeColor: "#0078D4", strokeWeight: 3 });
+        polyline.setMap(googleMap);
+      }
+      if (filtered.length > 0) googleMap.fitBounds(bounds);
     };
 
     // --- ADMIN EXPORT ---
     window.exportToExcel = () => {
-        const from = userExpFrom.value ? new Date(userExpFrom.value) : null;
-        const to = userExpTo.value ? new Date(userExpTo.value) : null;
-        const emp = expEmp.value;
+      const from = userExpFrom.value ? new Date(userExpFrom.value) : null;
+      const to = userExpTo.value ? new Date(userExpTo.value) : null;
+      const emp = expEmp.value;
 
-        let filtered = masterData;
-        if (emp !== 'all') filtered = filtered.filter(d => d.employee === emp);
-        if (from) filtered = filtered.filter(d => {
-            const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
-            return dDate >= from;
+      let filtered = masterData;
+      if (emp !== 'all') filtered = filtered.filter(d => d.employee === emp);
+      if (from) filtered = filtered.filter(d => {
+        const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+        return dDate >= from;
+      });
+      if (to) {
+        to.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(d => {
+          const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+          return dDate <= to;
         });
-        if (to) {
-            to.setHours(23, 59, 59, 999);
-            filtered = filtered.filter(d => {
-                const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
-                return dDate <= to;
-            });
-        }
+      }
 
-        const ws = XLSX.utils.json_to_sheet(filtered);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Visits");
-        XLSX.writeFile(wb, "ZennX_Report.xlsx");
+      const ws = XLSX.utils.json_to_sheet(filtered);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Visits");
+      XLSX.writeFile(wb, "ZennX_Report.xlsx");
     };
 
     // --- USER EXPORT ---
     window.userExportToExcel = () => {
-        const from = userExpFrom.value ? new Date(userExpFrom.value) : null;
-        const to = userExpTo.value ? new Date(userExpTo.value) : null;
+      const from = userExpFrom.value ? new Date(userExpFrom.value) : null;
+      const to = userExpTo.value ? new Date(userExpTo.value) : null;
 
-        let filtered = masterData.filter(d => d.employee === currentUser);
-        
-        if (from) filtered = filtered.filter(d => {
-            const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
-            return dDate >= from;
+      let filtered = masterData.filter(d => d.employee === currentUser);
+
+      if (from) filtered = filtered.filter(d => {
+        const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+        return dDate >= from;
+      });
+      if (to) {
+        to.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(d => {
+          const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+          return dDate <= to;
         });
-        if (to) {
-            to.setHours(23, 59, 59, 999);
-            filtered = filtered.filter(d => {
-                const dDate = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
-                return dDate <= to;
-            });
-        }
+      }
 
-        const ws = XLSX.utils.json_to_sheet(filtered);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "My Visits");
-        XLSX.writeFile(wb, "MyVisits_Report.xlsx");
+      const ws = XLSX.utils.json_to_sheet(filtered);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "My Visits");
+      XLSX.writeFile(wb, "MyVisits_Report.xlsx");
     };
   </script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhAIRN38f0GpLTaMZ9dKUGGZhDmUmwZhU"></script>
 </body>
+
 </html>
