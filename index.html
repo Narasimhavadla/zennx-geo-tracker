@@ -9,18 +9,17 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { corePlugins: { preflight: false } }</script>
   <style>
     :root {
       --primary: #0078D4;
       --bg: #F3F2F1;
-      --sidebar-bg: #FFFFFF;
-      --text-main: #201F1E;
+      --sidebar-bg: #fff;
       --text-muted: #605E5C;
       --border: #EDEBE9;
-      --white: #FFFFFF;
       --success: #107C10;
       --danger: #A4262C;
-      --overlay: rgba(0, 0, 0, 0.4);
     }
 
     * {
@@ -30,35 +29,13 @@
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background-color: var(--bg);
-      color: var(--text-main);
+      background: var(--bg);
       display: flex;
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* --- NAVIGATION --- */
-    .top-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      background: var(--primary);
-      color: white;
-      display: none;
-      align-items: center;
-      padding: 0 15px;
-      z-index: 900;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    .hamburger {
-      font-size: 1.5rem;
-      cursor: pointer;
-      margin-right: 15px;
-    }
-
+    /* Sidebar */
     .sidebar {
       width: 260px;
       height: 100vh;
@@ -68,16 +45,13 @@
       flex-direction: column;
       position: fixed;
       z-index: 1001;
-      transition: transform 0.3s ease;
+      transition: transform .3s ease;
     }
 
     .sidebar-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--overlay);
+      inset: 0;
+      background: rgba(0, 0, 0, .4);
       display: none;
       z-index: 1000;
     }
@@ -98,7 +72,7 @@
       gap: 16px;
       cursor: pointer;
       color: var(--text-muted);
-      transition: 0.2s;
+      transition: .2s;
       font-weight: 500;
     }
 
@@ -108,7 +82,28 @@
       border-left: 4px solid var(--primary);
     }
 
-    @media (max-width: 850px) {
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--primary);
+      color: #fff;
+      display: none;
+      align-items: center;
+      padding: 0 15px;
+      z-index: 900;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+    }
+
+    .hamburger {
+      font-size: 1.5rem;
+      cursor: pointer;
+      margin-right: 15px;
+    }
+
+    @media(max-width:850px) {
       .sidebar {
         transform: translateX(-100%);
         display: flex !important;
@@ -132,10 +127,11 @@
       }
     }
 
+    /* Layout */
     .main-content {
       flex: 1;
       padding: 25px;
-      transition: 0.3s;
+      transition: .3s;
       width: 100%;
     }
 
@@ -154,12 +150,12 @@
     }
 
     .card {
-      background: var(--white);
+      background: #fff;
       padding: 20px;
       border-radius: 8px;
       border: 1px solid var(--border);
       margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
     }
 
     .stats-grid {
@@ -170,7 +166,7 @@
     }
 
     .stat-card {
-      background: var(--white);
+      background: #fff;
       padding: 15px;
       border-radius: 8px;
       border-left: 4px solid var(--primary);
@@ -195,7 +191,7 @@
 
     button {
       background: var(--primary);
-      color: white;
+      color: #fff;
       padding: 12px;
       border: none;
       border-radius: 6px;
@@ -203,9 +199,31 @@
       font-weight: 600;
     }
 
-    /* --- REDESIGNED HISTORY STYLES --- */
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      margin-bottom: 20px;
+    }
+
+    .filter-row input,
+    .filter-row select,
+    .filter-row button {
+      margin-bottom: 0;
+    }
+
+    .filter-row button {
+      width: auto;
+      min-width: 100px;
+    }
+
+    /* History cards */
     .hist-card {
-      background: white;
+      background: #fff;
       border-radius: 12px;
       padding: 20px;
       margin-bottom: 15px;
@@ -231,7 +249,7 @@
       color: #107c10;
       padding: 2px 10px;
       border-radius: 12px;
-      font-size: 0.75rem;
+      font-size: .75rem;
       font-weight: bold;
     }
 
@@ -242,13 +260,13 @@
       padding: 8px 12px;
       border-radius: 4px;
       margin-bottom: 4px;
-      font-size: 0.9rem;
+      font-size: .9rem;
       color: #444;
     }
 
     .hist-row i {
       width: 25px;
-      color: white;
+      color: #fff;
     }
 
     .hist-grid {
@@ -263,7 +281,7 @@
       padding: 10px;
       border-radius: 4px;
       margin-top: 10px;
-      font-size: 0.9rem;
+      font-size: .9rem;
       border-left: 4px solid #ccc;
     }
 
@@ -281,7 +299,7 @@
 
     .btn-icon {
       background: #0078D4;
-      color: white;
+      color: #fff;
       width: 35px;
       height: 35px;
       border-radius: 4px;
@@ -291,7 +309,7 @@
       text-decoration: none;
     }
 
-    @media (max-width: 600px) {
+    @media(max-width:600px) {
       .hist-img {
         position: static;
         width: 100%;
@@ -308,22 +326,19 @@
       }
     }
 
-    /* --- MODAL --- */
+    /* Modals */
     .modal {
       display: none;
       position: fixed;
       z-index: 2000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      inset: 0;
+      background: rgba(0, 0, 0, .5);
       align-items: center;
       justify-content: center;
     }
 
     .modal-content {
-      background: white;
+      background: #fff;
       padding: 25px;
       border-radius: 12px;
       width: 90%;
@@ -344,23 +359,19 @@
       border: 1px solid var(--border);
     }
 
-    /* --- MAP SEARCH MODAL --- */
+    /* Map Search Modal */
     .map-search-modal {
       display: none;
       position: fixed;
       z-index: 2001;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.55);
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
       align-items: center;
       justify-content: center;
     }
 
     .map-search-content {
-      background: white;
-      padding: 0;
+      background: #fff;
       border-radius: 14px;
       width: 95%;
       height: 92vh;
@@ -368,7 +379,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
     }
 
     .map-search-header {
@@ -393,7 +404,7 @@
       color: #999;
       padding: 4px 8px;
       border-radius: 6px;
-      transition: background 0.2s;
+      transition: background .2s;
     }
 
     .close-btn:hover {
@@ -401,7 +412,6 @@
       color: #333;
     }
 
-    /* Search bar area */
     .map-search-bar-area {
       padding: 14px 16px 10px;
       border-bottom: 1px solid var(--border);
@@ -420,18 +430,18 @@
       top: 50%;
       transform: translateY(-50%);
       color: #888;
-      font-size: 0.95rem;
+      font-size: .95rem;
       pointer-events: none;
     }
 
     .map-search-input {
       width: 100%;
       padding: 11px 14px 11px 38px;
-      font-size: 0.95rem;
+      font-size: .95rem;
       border: 1.5px solid var(--border);
       border-radius: 8px;
       outline: none;
-      transition: border 0.2s;
+      transition: border .2s;
       font-family: inherit;
       box-sizing: border-box;
       margin: 0;
@@ -439,7 +449,7 @@
 
     .map-search-input:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.12);
+      box-shadow: 0 0 0 3px rgba(0, 120, 212, .12);
     }
 
     .search-suggestions {
@@ -447,10 +457,10 @@
       top: calc(100% + 4px);
       left: 0;
       right: 0;
-      background: white;
+      background: #fff;
       border: 1px solid #ddd;
       border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
       max-height: 220px;
       overflow-y: auto;
       z-index: 999;
@@ -460,12 +470,12 @@
     .suggestion-item {
       padding: 10px 14px;
       cursor: pointer;
-      font-size: 0.88rem;
+      font-size: .88rem;
       border-bottom: 1px solid #f0f0f0;
       display: flex;
       align-items: flex-start;
       gap: 8px;
-      transition: background 0.15s;
+      transition: background .15s;
     }
 
     .suggestion-item:last-child {
@@ -488,21 +498,20 @@
     }
 
     .suggestion-sub {
-      font-size: 0.8rem;
+      font-size: .8rem;
       color: #888;
       margin-top: 1px;
     }
 
     .search-loading {
       padding: 10px 14px;
-      font-size: 0.85rem;
+      font-size: .85rem;
       color: #888;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    /* Map container */
     .map-search-map-wrap {
       flex: 1;
       position: relative;
@@ -513,17 +522,16 @@
       height: 100%;
     }
 
-    /* Coords panel */
     .map-coords-panel {
       position: absolute;
       bottom: 12px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.75);
-      color: white;
+      background: rgba(0, 0, 0, .75);
+      color: #fff;
       padding: 8px 16px;
       border-radius: 20px;
-      font-size: 0.82rem;
+      font-size: .82rem;
       white-space: nowrap;
       z-index: 5;
       display: none;
@@ -536,18 +544,17 @@
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 120, 212, 0.85);
-      color: white;
+      background: rgba(0, 120, 212, .85);
+      color: #fff;
       padding: 5px 14px;
       border-radius: 16px;
-      font-size: 0.78rem;
+      font-size: .78rem;
       z-index: 5;
       pointer-events: none;
-      transition: opacity 0.4s;
+      transition: opacity .4s;
       white-space: nowrap;
     }
 
-    /* Footer */
     .map-search-footer {
       display: flex;
       gap: 10px;
@@ -559,7 +566,7 @@
     }
 
     .map-selected-coords {
-      font-size: 0.82rem;
+      font-size: .82rem;
       color: #555;
       flex: 1;
     }
@@ -574,40 +581,6 @@
       min-width: 110px;
       margin: 0;
       padding: 10px 18px;
-    }
-
-    /* Location buttons grouping */
-    .location-btn-group {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-
-    .location-btn-group button {
-      margin-bottom: 0;
-    }
-
-    .filter-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      background: transparent;
-      border: none;
-      box-shadow: none;
-      padding: 0;
-      margin-bottom: 20px;
-    }
-
-    .filter-row input,
-    .filter-row select,
-    .filter-row button {
-      margin-bottom: 0;
-    }
-
-    .filter-row button {
-      width: auto;
-      min-width: 100px;
     }
   </style>
 </head>
@@ -786,9 +759,6 @@
           <button onclick="getLocation()"
             style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍
             Capture GPS</button>
-          <button onclick="openMapSearch('admin')"
-            style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️
-            Search on Map</button>
         </div>
         <p id="locText" style="text-align:center; font-size:0.8rem;">Location not set</p>
         <input type="file" id="selfie" accept="image/*" placeholder="Upload Photo">
@@ -819,13 +789,27 @@
     <div id="mapView" class="view-container">
       <h1>Live Field Tracking</h1>
       <div class="card">
-        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
-          <input type="date" id="mapDateFilter" style="flex:1; min-width:150px;">
-          <select id="mapEmpFilter" style="flex:1; min-width:150px;">
-            <option value="">All Staff</option>
-          </select>
-          <button onclick="updateMap()" style="width:auto">Refresh Path</button>
+        <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap; align-items:flex-end;">
+          <div style="flex:1; min-width:150px;">
+            <label
+              style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:5px;">DATE</label>
+            <input type="date" id="mapDateFilter" style="margin:0; width:100%;">
+          </div>
+          <div style="flex:1; min-width:160px;">
+            <label
+              style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:5px;">EMPLOYEE</label>
+            <select id="mapEmpFilter" style="margin:0; width:100%;">
+              <option value="">All Employees</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button onclick="updateMap()" style="width:auto; padding:12px 20px; margin:0;">🔍 Search</button>
+            <button onclick="clearMapFilters()"
+              style="width:auto; padding:12px 20px; margin:0; background:#eee; color:#333;">✕ Clear</button>
+          </div>
         </div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 12px;"><i class="fas fa-info-circle"></i> Filter
+          by date to see the timed visit path with arrows. All pins shown by default.</p>
         <div id="map"></div>
       </div>
     </div>
@@ -952,6 +936,7 @@
         if (visibleSidebar.classList.contains('open')) toggleSidebar();
       }
       if (id !== 'loginView') loadData();
+      if (id === 'mapView') setTimeout(() => updateMap(), 300);
     };
 
     // --- AUTH & LOGOUT MODAL ---
@@ -1212,13 +1197,13 @@
         await addDoc(collection(db, "visits"), visitData);
 
         const waText = `📍 *Visit Update*\n\n` +
-          `👨‍💼 *Employee:* ${currentUser}\n` +
-          `🏪 *Client:* ${clientName.value}\n` +
-          `🆔 *ZID:* ${zid.value || 'N/A'}\n` +
-          `📍 *Area:* ${area.value}\n` +
-          `📊 *Status:* ${status.value}\n` +
-          `📝 *Feedback:* ${feedback.value || "-"}\n` +
-          `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
+          ` *Employee:* ${currentUser}\n` +
+          ` *Client:* ${clientName.value}\n` +
+          ` *ZID:* ${zid.value || 'N/A'}\n` +
+          ` *Area:* ${area.value}\n` +
+          ` *Status:* ${status.value}\n` +
+          ` *Feedback:* ${feedback.value || "-"}\n` +
+          ` *Time:* ${visitDate.toLocaleString()}\n` +
           `📌 *Location:* https://www.google.com/maps?q=${lat},${lng}`;
 
         document.getElementById('visitSummaryText').value = waText;
@@ -1274,13 +1259,13 @@
         await addDoc(collection(db, "visits"), visitData);
 
         const waText = `📍 *Visit Update*\n\n` +
-          `👨‍💼 *Employee:* ${currentUser}\n` +
-          `🏪 *Client:* ${userClientName.value}\n` +
-          `🆔 *ZID:* ${userZid.value || 'N/A'}\n` +
-          `📍 *Area:* ${userArea.value}\n` +
-          `📊 *Status:* ${userStatus.value}\n` +
-          `📝 *Feedback:* ${userFeedback.value || "-"}\n` +
-          `🕒 *Time:* ${visitDate.toLocaleString()}\n` +
+          ` *Employee:* ${currentUser}\n` +
+          ` *Client:* ${userClientName.value}\n` +
+          ` *ZID:* ${userZid.value || 'N/A'}\n` +
+          ` *Area:* ${userArea.value}\n` +
+          ` *Status:* ${userStatus.value}\n` +
+          ` *Feedback:* ${userFeedback.value || "-"}\n` +
+          ` *Time:* ${visitDate.toLocaleString()}\n` +
           `📌 *Location:* https://www.google.com/maps?q=${userLat},${userLng}`;
 
         document.getElementById('userVisitSummaryText').value = waText;
@@ -1415,42 +1400,129 @@
     };
 
     // --- MAP TRACKING ---
+    let mapPathLine = null;
+
     function initMap() {
-      if (!googleMap) googleMap = new google.maps.Map(document.getElementById("map"), { zoom: 5, center: { lat: 20.5937, lng: 78.9629 } });
+      // map is re-created fresh each call; this is intentional so the
+      // container (which may have just become visible) gets a clean render.
+      if (!document.getElementById('map') || !window.google) return;
+      googleMap = new google.maps.Map(document.getElementById('map'), {
+        zoom: 5, center: { lat: 20.5937, lng: 78.9629 },
+        mapTypeControl: false, streetViewControl: false
+      });
       updateMap();
     }
 
     window.updateMap = () => {
-      const date = mapDateFilter.value;
-      const emp = mapEmpFilter.value;
-      markers.forEach(m => m.setMap(null)); markers = [];
-      if (polyline) polyline.setMap(null);
+      if (!window.google) return;
 
+      // Lazily init map if it hasn't been created yet
+      if (!googleMap) {
+        initMap();
+        return;          // initMap calls updateMap again
+      }
+
+      const date = document.getElementById('mapDateFilter').value;
+      const emp = document.getElementById('mapEmpFilter').value;
+
+      // Clear old markers / polyline
+      markers.forEach(m => m.setMap(null));
+      markers = [];
+      if (polyline) { polyline.setMap(null); polyline = null; }
+      if (mapPathLine) { mapPathLine.setMap(null); mapPathLine = null; }
+
+      // Filter data
       const filtered = masterData.filter(d => {
+        if (!d.latitude || !d.longitude) return false;
         const dDate = new Date(d.time.seconds ? d.time.seconds * 1000 : d.time).toISOString().split('T')[0];
         return (!date || dDate === date) && (!emp || d.employee === emp);
       });
 
-      const path = [];
-      const bounds = new google.maps.LatLngBounds();
-      filtered.forEach((d, i) => {
-        const pos = { lat: d.latitude, lng: d.longitude };
-        path.push(pos);
-        bounds.extend(pos);
-        markers.push(new google.maps.Marker({ position: pos, map: googleMap, label: (i + 1).toString(), title: d.clientName }));
+      if (filtered.length === 0) return;
+
+      // Sort by time (ascending) for the path
+      const sorted = [...filtered].sort((a, b) => {
+        const ta = a.time.seconds ? a.time.seconds * 1000 : new Date(a.time).getTime();
+        const tb = b.time.seconds ? b.time.seconds * 1000 : new Date(b.time).getTime();
+        return ta - tb;
       });
 
-      if (path.length > 1) {
-        polyline = new google.maps.Polyline({ path: path, geodesic: true, strokeColor: "#0078D4", strokeWeight: 3 });
-        polyline.setMap(googleMap);
+      const bounds = new google.maps.LatLngBounds();
+      const pathCoords = [];
+
+      sorted.forEach((d, i) => {
+        const pos = { lat: d.latitude, lng: d.longitude };
+        pathCoords.push(pos);
+        bounds.extend(pos);
+
+        const dateObj = d.time.seconds ? new Date(d.time.seconds * 1000) : new Date(d.time);
+        const empName = (d.employee || '').split('@')[0];
+
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: googleMap,
+          label: { text: String(i + 1), color: 'white', fontWeight: 'bold', fontSize: '11px' },
+          title: d.clientName,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#0078D4',
+            fillOpacity: 1,
+            strokeColor: '#005A9E',
+            strokeWeight: 2,
+            scale: 14
+          }
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `<div style="font-family:'Segoe UI',sans-serif; min-width:180px; padding:4px">
+            <b style="color:#0078D4; font-size:1rem;">#${i + 1} ‒ ${d.clientName || 'Unknown'}</b><br>
+            <span style="font-size:0.8rem; color:#555;">
+              👤 ${empName}<br>
+              📍 ${d.area || '-'}<br>
+              📊 ${d.orderStatus || '-'}<br>
+              🕒 ${dateObj.toLocaleString()}
+            </span><br>
+            <a href="https://www.google.com/maps?q=${d.latitude},${d.longitude}" target="_blank"
+               style="font-size:0.78rem; color:#0078D4;">Open in Maps ↗</a>
+          </div>`
+        });
+
+        marker.addListener('click', () => infoWindow.open(googleMap, marker));
+        markers.push(marker);
+      });
+
+      // Draw path with arrows when a filter is active
+      const filtered_flag = !!(date || emp);
+      if (sorted.length > 1 && filtered_flag) {
+        mapPathLine = new google.maps.Polyline({
+          path: pathCoords,
+          geodesic: true,
+          strokeColor: '#0078D4',
+          strokeOpacity: 0.8,
+          strokeWeight: 4,
+          icons: [{
+            icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: '#005A9E' },
+            offset: '100%',
+            repeat: '80px'
+          }]
+        });
+        mapPathLine.setMap(googleMap);
       }
-      if (filtered.length > 0) googleMap.fitBounds(bounds);
+
+      googleMap.fitBounds(bounds);
+      if (filtered.length === 1) googleMap.setZoom(15);
+    };
+
+    window.clearMapFilters = () => {
+      document.getElementById('mapDateFilter').value = '';
+      document.getElementById('mapEmpFilter').value = '';
+      updateMap();
     };
 
     // --- ADMIN EXPORT ---
     window.exportToExcel = () => {
-      const from = userExpFrom.value ? new Date(userExpFrom.value) : null;
-      const to = userExpTo.value ? new Date(userExpTo.value) : null;
+      const from = expFrom.value ? new Date(expFrom.value) : null;
+      const to = expTo.value ? new Date(expTo.value) : null;
       const emp = expEmp.value;
 
       let filtered = masterData;
@@ -1467,10 +1539,23 @@
         });
       }
 
-      const ws = XLSX.utils.json_to_sheet(filtered);
+      const rows = filtered.map(d => ({
+        'Date': d.time.seconds ? new Date(d.time.seconds * 1000).toLocaleDateString() : '',
+        'Employee': d.employee || '',
+        'Client Name': d.clientName || '',
+        'ZID': d.zid || '',
+        'Area': d.area || '',
+        'Registered': d.registered || '',
+        'Status': d.orderStatus || '',
+        'Feedback': d.feedback || '',
+        'Latitude': (d.latitude || '').toString(),
+        'Longitude': (d.longitude || '').toString()
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Visits");
-      XLSX.writeFile(wb, "ZennX_Report.xlsx");
+      XLSX.utils.book_append_sheet(wb, ws, 'Visits');
+      XLSX.writeFile(wb, 'ZennX_Report.xlsx');
     };
 
     // --- USER EXPORT ---
