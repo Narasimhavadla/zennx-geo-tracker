@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZennX Tracker | Enterprise</title>
+  <title>ZennX Tracker</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -359,6 +359,67 @@
       border: 1px solid var(--border);
     }
 
+    /* Draft styles */
+    .draft-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border: 1px solid #f0c040;
+      border-left: 4px solid #f0a500;
+      position: relative;
+    }
+
+    .draft-badge {
+      background: #fff3cd;
+      color: #856404;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: bold;
+    }
+
+    .draft-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .draft-actions button {
+      flex: 1;
+      min-width: 100px;
+      padding: 10px;
+      font-size: .9rem;
+    }
+
+    .draft-edit-form {
+      display: none;
+      margin-top: 14px;
+      border-top: 1px solid #eee;
+      padding-top: 14px;
+    }
+
+    .draft-edit-form input,
+    .draft-edit-form select,
+    .draft-edit-form textarea {
+      margin-bottom: 10px;
+    }
+
+    .draft-empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 20px;
+      font-size: 1rem;
+    }
+
+    .draft-empty i {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 14px;
+      color: #ccc;
+    }
+
     /* Map Search Modal */
     .map-search-modal {
       display: none;
@@ -688,6 +749,10 @@
           Visit</span></div>
       <div class="nav-item" onclick="switchView('userHistoryView', this)"><i class="fas fa-history"></i><span>Visit
           History</span></div>
+      <div class="nav-item" id="draftNavItem" onclick="switchView('userDraftsView', this)"><i
+          class="fas fa-file-alt"></i><span>Drafts <span id="draftCount"
+            style="background:#f0a500;color:#fff;border-radius:10px;padding:1px 7px;font-size:.72rem;margin-left:4px;"></span></span>
+      </div>
     </div>
     <div class="nav-item" onclick="openLogoutModal()" style="color:var(--danger); border-top:1px solid var(--border)"><i
         class="fas fa-sign-out-alt"></i><span>Logout</span></div>
@@ -863,21 +928,19 @@
           <button onclick="userGetLocation()"
             style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">📍
             Capture GPS</button>
-          <button onclick="openMapSearch('user')"
-            style="background:#f8f9fa; color:var(--primary); border:1px solid var(--border); flex:1; min-width:150px;">🗺️
-            Search on Map</button>
         </div>
         <p id="userLocText" style="text-align:center; font-size:0.8rem;">Location not set</p>
         <input type="file" id="userSelfie" accept="image/*" placeholder="Upload Photo">
-        <button id="userSubmitBtn" onclick="userSubmitVisit()">Submit Report ✅</button>
+        <button id="userSubmitBtn" onclick="userSubmitVisit()">Save</button>
       </div>
+    </div>
 
-      <div id="userSummaryCard" class="card" style="display:none; background: #eef;">
-        <h4 style="margin-top:0">📋 Visit Summary</h4>
-        <textarea id="userVisitSummaryText" rows="7" readonly style="background:white"></textarea>
-        <button onclick="userCopyVisitText()" style="background:#25D366"><i class="fab fa-whatsapp"></i> Copy for
-          WhatsApp</button>
-      </div>
+    <!-- USER DRAFTS -->
+    <div id="userDraftsView" class="view-container">
+      <h1>My Drafts</h1>
+      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;"><i class="fas fa-info-circle"></i>
+        Drafts are only visible to you. Edit and publish when ready to submit.</p>
+      <div id="userDraftsList"></div>
     </div>
 
     <!-- USER HISTORY -->
@@ -894,7 +957,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, addDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, addDoc, collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -912,7 +975,7 @@
     const storage = getStorage(app);
     const auth = getAuth(app);
 
-    let lat, lng, userLat, userLng, currentUser, masterData = [], googleMap, markers = [], polyline;
+    let lat, lng, userLat, userLng, currentUser, masterData = [], draftsData = [], googleMap, markers = [], polyline;
     let adminMapSearch, userMapSearch, adminMarker, userMarker, geocoder;
 
     // --- NAVIGATION ---
@@ -1232,17 +1295,20 @@
 
     window.userSubmitVisit = async () => {
       const file = userSelfie.files[0];
-      if (!userLat || !userLng || !file) return alert("Missing GPS or Photo!");
+      if (!userLat || !userLng) return alert("Missing GPS! Please capture location first.");
+      if (!userClientName.value.trim()) return alert("Please enter Client Name!");
       userSubmitBtn.disabled = true;
-      userSubmitBtn.innerText = "Uploading...";
+      userSubmitBtn.innerText = "Saving...";
 
       try {
-        const sRef = ref(storage, `v/${Date.now()}`);
-        await uploadBytes(sRef, file);
-        const url = await getDownloadURL(sRef);
-        const visitDate = new Date();
+        let imageUrl = '';
+        if (file) {
+          const sRef = ref(storage, `drafts/${Date.now()}`);
+          await uploadBytes(sRef, file);
+          imageUrl = await getDownloadURL(sRef);
+        }
 
-        const visitData = {
+        const draftData = {
           employee: currentUser,
           clientName: userClientName.value,
           zid: userZid.value || 'N/A',
@@ -1252,50 +1318,55 @@
           feedback: userFeedback.value,
           latitude: userLat,
           longitude: userLng,
-          imageUrl: url,
-          time: visitDate
+          imageUrl: imageUrl,
+          status: 'draft'
         };
 
-        await addDoc(collection(db, "visits"), visitData);
+        await addDoc(collection(db, "drafts"), draftData);
 
-        const waText = `📍 *Visit Update*\n\n` +
-          ` *Employee:* ${currentUser}\n` +
-          ` *Client:* ${userClientName.value}\n` +
-          ` *ZID:* ${userZid.value || 'N/A'}\n` +
-          ` *Area:* ${userArea.value}\n` +
-          ` *Status:* ${userStatus.value}\n` +
-          ` *Feedback:* ${userFeedback.value || "-"}\n` +
-          ` *Time:* ${visitDate.toLocaleString()}\n` +
-          `📌 *Location:* https://www.google.com/maps?q=${userLat},${userLng}`;
+        // Reset form
+        userClientName.value = '';
+        userZid.value = '';
+        userArea.value = '';
+        userReg.value = 'Registered';
+        userStatus.value = 'Active';
+        userFeedback.value = '';
+        userSelfie.value = '';
+        userLat = null; userLng = null;
+        document.getElementById('userLocText').innerText = 'Location not set';
+        userSubmitBtn.disabled = false;
+        userSubmitBtn.innerText = 'Save';
 
-        document.getElementById('userVisitSummaryText').value = waText;
-        document.getElementById('userSummaryCard').style.display = 'block';
-        userSubmitBtn.innerText = "Submitted Successfully!";
-        alert("Report Saved!");
+        alert("Saved to Drafts! Go to Drafts page to edit and publish.");
         loadData();
       } catch (e) {
         alert("Error: " + e.message);
         userSubmitBtn.disabled = false;
+        userSubmitBtn.innerText = 'Save ';
       }
-    };
-
-    window.userCopyVisitText = () => {
-      const copyText = document.getElementById("userVisitSummaryText");
-      copyText.select();
-      copyText.setSelectionRange(0, 99999);
-      navigator.clipboard.writeText(copyText.value);
-      alert("Copied to clipboard!");
     };
 
     // --- DATA LOADING & FILTERING ---
     async function loadData() {
       const snap = await getDocs(query(collection(db, "visits"), orderBy("time", "asc")));
       masterData = [];
-      snap.forEach(doc => masterData.push(doc.data()));
+      snap.forEach(d => masterData.push(d.data()));
       updateStats();
       renderHistory(masterData);
       updateUserStats();
       renderUserHistory(masterData.filter(d => d.employee === currentUser));
+
+      // Load drafts for current user
+      if (currentUser) {
+        const dSnap = await getDocs(collection(db, "drafts"));
+        draftsData = [];
+        dSnap.forEach(d => draftsData.push({ id: d.id, ...d.data() }));
+        const myDrafts = draftsData.filter(d => d.employee === currentUser);
+        renderDrafts(myDrafts);
+        // Update draft count badge
+        const badge = document.getElementById('draftCount');
+        if (badge) badge.textContent = myDrafts.length > 0 ? myDrafts.length : '';
+      }
     }
 
     function updateStats() {
@@ -1397,6 +1468,122 @@
     window.resetUserFilters = () => {
       userHDateFilter.value = "";
       renderUserHistory(masterData.filter(d => d.employee === currentUser));
+    };
+
+    // --- DRAFTS RENDERING ---
+    function renderDrafts(data) {
+      const container = document.getElementById('userDraftsList');
+      if (!container) return;
+      if (data.length === 0) {
+        container.innerHTML = `<div class="draft-empty"><i class="fas fa-file-alt"></i>No drafts yet. When you add a new visit, it will appear here for review before publishing.</div>`;
+        return;
+      }
+      container.innerHTML = data.map(d => {
+        const imgHtml = d.imageUrl ? `<img src="${d.imageUrl}" class="hist-img" onclick="window.open('${d.imageUrl}')" style="position:static; width:100%; max-width:180px; height:120px; margin-top:10px;">` : `<span style="color:#aaa; font-size:.85rem;">No photo</span>`;
+        return `
+          <div class="draft-card" id="draftCard_${d.id}">
+            <div class="hist-header">
+              <span class="hist-name">${d.clientName || 'Unnamed'}</span>
+              <span class="draft-badge">Draft</span>
+            </div>
+            <div class="hist-grid">
+              <div class="hist-row"><i class="fas fa-map-marker-alt"></i> ${d.area || '-'}</div>
+              <div class="hist-row"><i class="fas fa-tag"></i> ${d.registered || '-'}</div>
+              <div class="hist-row"><i class="fas fa-circle-dot"></i> ${d.orderStatus || '-'}</div>
+            </div>
+            ${d.latitude && d.longitude ? `
+            <a href="https://www.google.com/maps?q=${d.latitude},${d.longitude}" target="_blank"
+              style="display:flex; align-items:center; gap:8px; margin:10px 0 4px; padding:9px 12px; background:#E1F0FE; border-radius:6px; text-decoration:none; font-size:.85rem; color:#0078D4; font-weight:600; border:1px solid #b3d4f5; transition:background .2s;"
+              onmouseover="this.style.background='#c5e0fa'" onmouseout="this.style.background='#E1F0FE'">
+              <i class="fas fa-location-dot" style="font-size:1rem;"></i>
+              <span>${d.latitude.toFixed(5)}, ${d.longitude.toFixed(5)}</span>
+              <span style="margin-left:auto; font-size:.78rem; opacity:.7;">View on Map ↗</span>
+            </a>` : ''}
+            <div class="hist-feedback"><b>Feedback:</b> ${d.feedback || 'No feedback'}</div>
+            ${imgHtml}
+            <div class="draft-actions">
+              <button onclick="toggleDraftEdit('${d.id}')" style="background:#0078D4;"><i class="fas fa-edit"></i> Edit</button>
+              <button onclick="publishDraft('${d.id}')" style="background:#107C10;"><i class="fas fa-paper-plane"></i> Publish</button>
+              <button onclick="deleteDraft('${d.id}')" style="background:#A4262C;"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+            <div class="draft-edit-form" id="draftEdit_${d.id}">
+              <h4 style="margin:0 0 12px; color:var(--primary)"> Edit Draft</h4>
+              <input type="text" id="de_client_${d.id}" value="${d.clientName || ''}" placeholder="Client Name">
+              <input type="text" id="de_zid_${d.id}" value="${d.zid || ''}" placeholder="ZID (Optional)">
+              <input type="text" id="de_area_${d.id}" value="${d.area || ''}" placeholder="Area">
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <select id="de_reg_${d.id}" style="flex:1">
+                  <option ${d.registered === 'Registered' ? 'selected' : ''}>Registered</option>
+                  <option ${d.registered === 'Not Registered' ? 'selected' : ''}>Not Registered</option>
+                </select>
+                <select id="de_status_${d.id}" style="flex:1">
+                  <option ${d.orderStatus === 'Active' ? 'selected' : ''}>Active</option>
+                  <option ${d.orderStatus === 'Not Active' ? 'selected' : ''}>Not Active</option>
+                  <option ${d.orderStatus === 'Occasional' ? 'selected' : ''}>Occasional</option>
+                </select>
+              </div>
+              <textarea id="de_feedback_${d.id}" placeholder="Feedback/Notes">${d.feedback || ''}</textarea>
+              <div style="display:flex; gap:10px;">
+                <button onclick="saveDraftEdit('${d.id}')" style="background:#107C10; flex:1;"><i class="fas fa-save"></i> Save Changes</button>
+                <button onclick="toggleDraftEdit('${d.id}')" style="background:#eee; color:#333; flex:1;">Cancel</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    window.toggleDraftEdit = (id) => {
+      const form = document.getElementById(`draftEdit_${id}`);
+      if (!form) return;
+      form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    };
+
+    window.saveDraftEdit = async (id) => {
+      const updates = {
+        clientName: document.getElementById(`de_client_${id}`).value,
+        zid: document.getElementById(`de_zid_${id}`).value || 'N/A',
+        area: document.getElementById(`de_area_${id}`).value,
+        registered: document.getElementById(`de_reg_${id}`).value,
+        orderStatus: document.getElementById(`de_status_${id}`).value,
+        feedback: document.getElementById(`de_feedback_${id}`).value
+      };
+      try {
+        await updateDoc(doc(db, 'drafts', id), updates);
+        alert('Draft updated!');
+        loadData();
+      } catch (e) {
+        alert('Error saving: ' + e.message);
+      }
+    };
+
+    window.publishDraft = async (id) => {
+      const draft = draftsData.find(d => d.id === id);
+      if (!draft) return;
+      if (!confirm('Publish this draft? It will be submitted to the admin.')) return;
+      try {
+        const visitData = { ...draft };
+        delete visitData.id;
+        delete visitData.status;
+        delete visitData.savedAt;
+        visitData.time = new Date();
+        await addDoc(collection(db, 'visits'), visitData);
+        await deleteDoc(doc(db, 'drafts', id));
+        alert('Published successfully! The visit is now visible to admin.');
+        loadData();
+      } catch (e) {
+        alert('Error publishing: ' + e.message);
+      }
+    };
+
+    window.deleteDraft = async (id) => {
+      if (!confirm('Delete this draft permanently?')) return;
+      try {
+        await deleteDoc(doc(db, 'drafts', id));
+        alert('Draft deleted.');
+        loadData();
+      } catch (e) {
+        alert('Error deleting: ' + e.message);
+      }
     };
 
     // --- MAP TRACKING ---
